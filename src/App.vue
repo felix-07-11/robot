@@ -16,7 +16,7 @@
                         <v-list-item link>
                             <v-list-item-icon>
                                 <svg
-                                    style="width: 20px; height: 20px"
+                                    style="width: 24px; height: 24px"
                                     viewBox="0 0 24 24"
                                     class="ml-2"
                                 >
@@ -34,8 +34,8 @@
                             <v-list-item-icon>
                                 <svg
                                     style="
-                                        width: 20px;
-                                        height: 20px;
+                                        width: 24px;
+                                        height: 24px;
                                         fill-rule: evenodd;
                                         clip-rule: evenodd;
                                         stroke-linejoin: round;

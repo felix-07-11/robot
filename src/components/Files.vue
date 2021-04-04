@@ -1,10 +1,20 @@
 <template>
     <v-container fill-height fliud>
         <v-row align="center" justify="space-around">
-            <v-col md="6" class="pt-4">
+            <v-col cols="10" lg="6" xl="6" class="pt-4">
+                <v-btn block class="mb-4">
+                    <v-icon left>mdi-folder-plus</v-icon>
+                    Arbeitsverzeichnis erstellen
+                </v-btn>
+                <v-btn block class="mb-8">
+                    <v-icon left>mdi-folder-open</v-icon>
+                    Arbeitsverzeichnis öffnen
+                </v-btn>
+
                 <v-card elevation="2" class="pa-4">
                     <v-toolbar dense flat class="mb-4">
                         <v-btn
+                            color="primary"
                             v-if="
                                 /\.rmodule/.test(active) || /\.rs/.test(active)
                             "
@@ -12,7 +22,7 @@
                             <v-icon class="mr-2">mdi-open-in-new</v-icon>
                             Im Editor öffnen
                         </v-btn>
-                        <v-btn v-if="/\.rw/.test(active)">
+                        <v-btn v-if="/\.rw/.test(active)" color="primary">
                             <v-icon class="mr-2">mdi-open-in-new</v-icon>
                             Welt öffnen
                         </v-btn>
@@ -121,7 +131,11 @@ export default Vue.extend({
             {
                 name: '@modules',
                 type: 'dir',
-                children: [{ name: 'basic.rmodule' }],
+                children: [
+                    { name: 'basic1.rmodule' },
+                    { name: 'basic2.rmodule' },
+                    { name: 'basic3.rmodule' },
+                ],
             },
         ],
         canShare: () => (navigator.share === undefined ? false : true),
@@ -131,8 +145,5 @@ export default Vue.extend({
         active: [],
         open: ['@storage'],
     }),
-    mounted() {
-        console.log(this.active.length)
-    },
 })
 </script>

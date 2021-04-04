@@ -1,16 +1,18 @@
 <template>
     <v-container fill-height fluid class="pa-0">
-        <v-row no-gutters class="fill-height" style="display: absolute">
+        <v-row no-gutters class="fill-height">
             <!-- Editor -->
             <v-col
-                :sm="showEditor ? '12' : '0'"
-                :md="showEditor ? '6' : '0'"
-                :lg="showEditor ? '5' : '0'"
+                :sm="showEditor ? '12' : 'auto'"
+                :md="showEditor ? '6' : 'auto'"
+                :lg="showEditor ? '4' : 'auto'"
+                :xl="showEditor ? '3' : 'auto'"
             >
                 <v-card
                     flat
                     class="grey lighten-4 pa-4"
                     style="height: 100%; width: 100%"
+                    :style="showEditor ? '' : 'display: none;'"
                 >
                     <div class="d-flex" style="height: 100%; width: 100%">
                         <div
@@ -118,7 +120,6 @@
                         >
                             <v-btn icon @click="showEditor = !showEditor">
                                 <svg
-                                    v-if="showEditor"
                                     style="width: 20px; height: 20px"
                                     viewBox="0 0 24 24"
                                 >
@@ -127,23 +128,225 @@
                                         d="M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z"
                                     />
                                 </svg>
-                                <svg
-                                    v-else
-                                    style="width: 20px; height: 20px"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        fill="currentColor"
-                                        d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"
-                                    />
-                                </svg>
                             </v-btn>
                         </div>
                     </div>
                 </v-card>
+                <v-card
+                    flat
+                    class="grey lighten-4 d-flex align-center justify-center"
+                    style="height: 100%; width: 100%"
+                    :style="showEditor ? 'display: none !important;' : ''"
+                >
+                    <v-card-text>
+                        <v-btn icon @click="showEditor = !showEditor">
+                            <svg
+                                style="width: 20px; height: 20px"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    fill="currentColor"
+                                    d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"
+                                />
+                            </svg>
+                        </v-btn>
+                    </v-card-text>
+                </v-card>
             </v-col>
             <!-- 3d View -->
+            <v-col
+                class="d-md-flex flex-column align-center justify-center"
+                :class="showEditor ? 'd-sm-none' : 'd-sm-flex'"
+                :sm="!showEditor ? '11' : '1'"
+                :md="!showEditor ? '11' : '6'"
+                :lg="!showEditor ? '11' : '8'"
+                :xl="!showEditor ? '11' : '9'"
+            >
+                <div
+                    class="flex-grow-1 d-flex flex-column align-center justify-center"
+                    style="width: 100%"
+                >
+                    <div
+                        class="flex-grow-1 d-flex flex-column align-center justify-center"
+                    >
+                        3D Bereich
+                    </div>
+                    <v-card
+                        color="grey lighten-4"
+                        class="flex-grow-0"
+                        style="width: 100%"
+                        flat
+                        tile
+                    >
+                        <v-card-text>
+                            <!-- Script Actions -->
 
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on, attrs }">
+                                    <v-btn
+                                        icon
+                                        color="green accent-4"
+                                        v-bind="attrs"
+                                        v-on="on"
+                                    >
+                                        <v-icon>mdi-play</v-icon>
+                                    </v-btn>
+                                </template>
+                                <span>Programm Starten</span>
+                            </v-tooltip>
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on, attrs }">
+                                    <v-btn icon v-bind="attrs" v-on="on">
+                                        <v-icon>mdi-skip-next</v-icon>
+                                    </v-btn>
+                                </template>
+                                <span>Nächster Schritt</span>
+                            </v-tooltip>
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on, attrs }">
+                                    <v-btn icon v-bind="attrs" v-on="on">
+                                        <v-icon>mdi-pause</v-icon>
+                                    </v-btn>
+                                </template>
+                                <span>Pause</span>
+                            </v-tooltip>
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on, attrs }">
+                                    <v-btn
+                                        icon
+                                        color="error"
+                                        v-bind="attrs"
+                                        v-on="on"
+                                    >
+                                        <v-icon>mdi-stop</v-icon>
+                                    </v-btn>
+                                </template>
+                                <span>Programm stoppen</span>
+                            </v-tooltip>
+
+                            <!-- reload -->
+
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on, attrs }">
+                                    <v-btn
+                                        icon
+                                        v-bind="attrs"
+                                        v-on="on"
+                                        class="ml-4"
+                                    >
+                                        <v-icon>mdi-undo</v-icon>
+                                    </v-btn>
+                                </template>
+                                <span>Roboter zurücksetzen</span>
+                            </v-tooltip>
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on, attrs }">
+                                    <v-btn icon v-bind="attrs" v-on="on">
+                                        <v-icon>mdi-reload</v-icon>
+                                    </v-btn>
+                                </template>
+                                <span>Welt neu laden</span>
+                            </v-tooltip>
+
+                            <!-- Move -->
+
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on, attrs }">
+                                    <v-btn
+                                        icon
+                                        v-bind="attrs"
+                                        v-on="on"
+                                        class="ml-4"
+                                    >
+                                        <v-icon>mdi-arrow-left</v-icon>
+                                    </v-btn>
+                                </template>
+                                <span>Nach links drehen (A)</span>
+                            </v-tooltip>
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on, attrs }">
+                                    <v-btn icon v-bind="attrs" v-on="on">
+                                        <v-icon>mdi-arrow-up</v-icon>
+                                    </v-btn>
+                                </template>
+                                <span>Einen Schritt machen (W)</span>
+                            </v-tooltip>
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on, attrs }">
+                                    <v-btn icon v-bind="attrs" v-on="on">
+                                        <v-icon>mdi-arrow-right</v-icon>
+                                    </v-btn>
+                                </template>
+                                <span>Nach rechts drehen (D)</span>
+                            </v-tooltip>
+
+                            <!-- Boxes -->
+
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on, attrs }">
+                                    <v-btn
+                                        icon
+                                        v-bind="attrs"
+                                        v-on="on"
+                                        class="ml-4 font-weight-bold"
+                                    >
+                                        P
+                                    </v-btn>
+                                </template>
+                                <span>Box hinlegen (P)</span>
+                            </v-tooltip>
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on, attrs }">
+                                    <v-btn
+                                        icon
+                                        v-bind="attrs"
+                                        v-on="on"
+                                        class="font-weight-bold"
+                                    >
+                                        U
+                                    </v-btn>
+                                </template>
+                                <span>Box aufheben (U)</span>
+                            </v-tooltip>
+
+                            <!-- Marks -->
+
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on, attrs }">
+                                    <v-btn
+                                        icon
+                                        v-bind="attrs"
+                                        v-on="on"
+                                        class="ml-4 font-weight-bold"
+                                    >
+                                        M
+                                    </v-btn>
+                                </template>
+                                <span>Markierung setzen (M)</span>
+                            </v-tooltip>
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on, attrs }">
+                                    <v-btn
+                                        icon
+                                        v-bind="attrs"
+                                        v-on="on"
+                                        class="font-weight-bold"
+                                    >
+                                        R
+                                    </v-btn>
+                                </template>
+                                <span>Markierung löschen (R)</span>
+                            </v-tooltip>
+                        </v-card-text>
+                    </v-card>
+                </div>
+                <v-card
+                    class="flex-grow-0 d-flex align-center justify-center"
+                    min-height="300px"
+                    flat
+                    >Log Bereich</v-card
+                >
+            </v-col>
             <!-- Log -->
         </v-row>
     </v-container>
