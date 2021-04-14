@@ -176,6 +176,7 @@
                         <v-tab> 3D-Ansicht </v-tab>
                         <v-tab> RobotScript </v-tab>
                         <v-tab> Welt </v-tab>
+                        <v-tab> Struktogramm </v-tab>
                         <v-tab> Konvertierung </v-tab>
                         <v-tab v-if="platform === 'desktop'"> Electron </v-tab>
                         <v-tab> Info </v-tab>
@@ -187,6 +188,7 @@
                 <v-tab-item> <main-view /> </v-tab-item>
                 <v-tab-item> <rs-settings /> </v-tab-item>
                 <v-tab-item> <rw-settings /> </v-tab-item>
+                <v-tab-item> <structogramm /> </v-tab-item>
                 <v-tab-item> <convert /> </v-tab-item>
                 <v-tab-item v-if="platform === 'desktop'">
                     <electron-settings />
@@ -204,9 +206,11 @@ import Files from '@/components/Files.vue'
 import MainView from '@/components/MainView.vue'
 import RsSettings from '@/components/RSSettings.vue'
 import RwSettings from '@/components/RWSettings.vue'
+import Structogramm from '@/components/Structogram.vue'
 import Convert from '@/components/Convert.vue'
 import ElectronSettings from '@/components/ElectronSettings.vue'
 import Info from '@/components/Info.vue'
+import store from './store'
 
 export default Vue.extend({
     name: 'App',
@@ -216,6 +220,7 @@ export default Vue.extend({
         MainView,
         RsSettings,
         RwSettings,
+        Structogramm,
         Convert,
         ElectronSettings,
         Info,
@@ -228,12 +233,17 @@ export default Vue.extend({
     data: () => ({
         tab: null,
     }),
+
+    created() {
+        store.dispatch('init')
+    },
 })
 </script>
 
 <style scoped>
 .v-tabs-items {
     height: calc(100vh - 112px);
+    overflow: auto;
 }
 .v-window-item {
     height: 100% !important;

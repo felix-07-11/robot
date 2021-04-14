@@ -97,17 +97,26 @@
                     Aktuelle Welt speichern
                 </v-expansion-panel-header>
                 <v-expansion-panel-content>
-                    <v-form>
+                    <v-form ref="saveWorld">
                         <div
                             class="d-flex flex-row align-center justify-center"
                             style="width: 100%"
                         >
                             <v-text-field
-                                v-model="newFile"
+                                v-model="filename"
                                 label="Dateiname"
                                 clearable
                             ></v-text-field>
-                            <v-btn class="ml-4">Speichern</v-btn>
+                            <v-btn
+                                class="ml-4"
+                                @click="
+                                    if ($refs.saveWorld.validate()) {
+                                        saveWorld()
+                                        $refs.saveWorld.reset()
+                                    }
+                                "
+                                >Speichern</v-btn
+                            >
                         </div>
                     </v-form>
                 </v-expansion-panel-content>
@@ -117,6 +126,7 @@
 </template>
 
 <script lang="ts">
+import store from '@/store'
 import Vue from 'vue'
 export default Vue.extend({
     data: () => ({
@@ -124,6 +134,21 @@ export default Vue.extend({
         sizeX: '1',
         sizeY: '1',
         sizeZ: '1',
+        filename: '',
     }),
+
+    methods: {
+        saveWorld() {
+            let filename = this.filename
+            if (!/\.rw/.test(filename)) filename = `${filename}.rw`
+            store.dispatch('createFile', {
+                name: filename,
+                dir: 'storage',
+                val:
+                    localStorage.getItem('world') ||
+                    '{"size":{"width":5,"height":5,"depth":8},"resetPosition":{"x":0,"z":0},"boxes":[],"marked":[]}',
+            })
+        },
+    },
 })
 </script>

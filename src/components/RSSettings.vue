@@ -9,7 +9,7 @@
                     Neue RobotScript Datei erstellen
                 </v-expansion-panel-header>
                 <v-expansion-panel-content>
-                    <v-form>
+                    <v-form ref="createRsFile">
                         <div
                             class="d-flex flex-row align-center justify-center"
                             style="width: 100%"
@@ -18,8 +18,23 @@
                                 v-model="filename"
                                 label="Dateiname"
                                 clearable
+                                :rules="[
+                                    (val) =>
+                                        !!val ||
+                                        'Der Dateiname muss angegeben werden!',
+                                ]"
                             ></v-text-field>
-                            <v-btn class="ml-4">Erstellen</v-btn>
+                            <v-btn
+                                class="ml-4"
+                                @click="
+                                    if ($refs.createRsFile.validate()) {
+                                        createFile()
+                                        $refs.createRsFile.reset()
+                                    }
+                                "
+                            >
+                                Erstellen
+                            </v-btn>
                         </div>
                     </v-form>
                 </v-expansion-panel-content>
@@ -32,6 +47,12 @@
                     <v-form>
                         <v-container>
                             <v-row>
+                                <v-col cols="12">
+                                    <v-alert type="warning">
+                                        Robot-Script-Module befinden sich noch
+                                        in der Entwicklung.
+                                    </v-alert>
+                                </v-col>
                                 <v-col cols="6">
                                     <v-text-field
                                         v-model="filename"
@@ -59,6 +80,11 @@
                     RobotScript Module verwalten
                 </v-expansion-panel-header>
                 <v-expansion-panel-content>
+                    <v-alert type="warning">
+                        Robot-Script-Module befinden sich noch in der
+                        Entwicklung.<br />
+                        Das folgende ist nur ein Dsignkonzept.
+                    </v-alert>
                     <v-simple-table>
                         <template v-slot:default>
                             <thead>
@@ -133,6 +159,7 @@
 </template>
 
 <script lang="ts">
+import store from '@/store'
 import Vue from 'vue'
 export default Vue.extend({
     data: () => ({
@@ -158,6 +185,18 @@ export default Vue.extend({
                 state: 'disabled',
             },
         ],
+    },
+
+    methods: {
+        createFile() {
+            let filename = this.filename
+            if (!/\.rs/.test(filename)) filename = `${filename}.rs`
+            store.dispatch('createFile', {
+                name: filename,
+                dir: 'storage',
+                val: '',
+            })
+        },
     },
 })
 </script>

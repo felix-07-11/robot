@@ -28,6 +28,7 @@
                                             v-slot:activator="{ on, attrs }"
                                         >
                                             <v-btn
+                                                v-if="platform === 'desktop'"
                                                 icon
                                                 v-bind="attrs"
                                                 v-on="on"
@@ -64,7 +65,7 @@
                                         <span>Datei speichern</span>
                                     </v-tooltip>
                                     <v-spacer></v-spacer>
-                                    {{ filename }}
+                                    {{ filepath }}
                                     <v-spacer></v-spacer>
                                     <v-menu bottom left>
                                         <template
@@ -91,7 +92,10 @@
                                         </template>
 
                                         <v-list>
-                                            <v-list-item link>
+                                            <v-list-item
+                                                v-if="platform === 'desktop'"
+                                                link
+                                            >
                                                 <v-list-item-content>
                                                     Speichern unter
                                                 </v-list-item-content>
@@ -118,7 +122,13 @@
                         <div
                             class="flex-grow-0 d-flex justify-center align-center pl-4"
                         >
-                            <v-btn icon @click="showEditor = !showEditor">
+                            <v-btn
+                                icon
+                                @click="
+                                    showEditor = !showEditor
+                                    resize()
+                                "
+                            >
                                 <svg
                                     style="width: 20px; height: 20px"
                                     viewBox="0 0 24 24"
@@ -139,7 +149,13 @@
                     :style="showEditor ? 'display: none !important;' : ''"
                 >
                     <v-card-text>
-                        <v-btn icon @click="showEditor = !showEditor">
+                        <v-btn
+                            icon
+                            @click="
+                                showEditor = !showEditor
+                                resize()
+                            "
+                        >
                             <svg
                                 style="width: 20px; height: 20px"
                                 viewBox="0 0 24 24"
@@ -153,6 +169,7 @@
                     </v-card-text>
                 </v-card>
             </v-col>
+            <!-- ------------------------------------------------------------------------------------------->
             <!-- 3d View -->
             <v-col
                 class="d-md-flex flex-column align-center justify-center"
@@ -168,8 +185,9 @@
                 >
                     <div
                         class="flex-grow-1 d-flex flex-column align-center justify-center"
+                        style="width: 100%"
                     >
-                        3D Bereich
+                        <canvas id="threeeJS"></canvas>
                     </div>
                     <v-card
                         color="grey lighten-4"
@@ -257,6 +275,7 @@
                                         v-bind="attrs"
                                         v-on="on"
                                         class="ml-4"
+                                        @click="turnLeft"
                                     >
                                         <v-icon>mdi-arrow-left</v-icon>
                                     </v-btn>
@@ -265,7 +284,12 @@
                             </v-tooltip>
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on, attrs }">
-                                    <v-btn icon v-bind="attrs" v-on="on">
+                                    <v-btn
+                                        icon
+                                        v-bind="attrs"
+                                        v-on="on"
+                                        @click="step"
+                                    >
                                         <v-icon>mdi-arrow-up</v-icon>
                                     </v-btn>
                                 </template>
@@ -273,7 +297,12 @@
                             </v-tooltip>
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on, attrs }">
-                                    <v-btn icon v-bind="attrs" v-on="on">
+                                    <v-btn
+                                        icon
+                                        v-bind="attrs"
+                                        v-on="on"
+                                        @click="turnRight"
+                                    >
                                         <v-icon>mdi-arrow-right</v-icon>
                                     </v-btn>
                                 </template>
@@ -289,6 +318,7 @@
                                         v-bind="attrs"
                                         v-on="on"
                                         class="ml-4 font-weight-bold"
+                                        @click="put"
                                     >
                                         P
                                     </v-btn>
@@ -302,6 +332,7 @@
                                         v-bind="attrs"
                                         v-on="on"
                                         class="font-weight-bold"
+                                        @click="pick"
                                     >
                                         U
                                     </v-btn>
@@ -358,26 +389,209 @@ import Vue from 'vue'
 // Codemirror
 import CodeMirror from 'codemirror'
 import 'codemirror/lib/codemirror.css'
+import 'firacode/distr/fira_code.css'
+import store from '@/store'
+
+// 3d
+import { World } from '@/assets/3d/world'
+import { Character } from '@/assets/3d/character'
+import { PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three'
+import { OrbitControls } from 'three-orbitcontrols-ts'
 
 export default Vue.extend({
     data: () => ({
         showEditor: true,
         editor: undefined as undefined | CodeMirror.EditorFromTextArea,
+
+        // THREE JS
+
+        scene: new Scene(),
+        camera: new PerspectiveCamera(
+            75,
+            (document.querySelector('#threeeJS')?.clientWidth || 1) /
+                (document.querySelector('#threeeJS')?.clientHeight || 1),
+            0.1,
+            1000
+        ),
+        renderer: null as WebGLRenderer | null,
+        controls: null as OrbitControls | null,
+
+        // World
+        world: new World(),
+
+        // Character
+        character: null as Character | null,
     }),
 
     computed: {
-        filename: () => 'willkommen.rs',
+        platform: () => store.state.platform,
+        filepath: () => store.state.activeRsFilePath,
         isSaved: () => false,
     },
 
-    mounted() {
-        this.editor = CodeMirror.fromTextArea(
-            document.getElementById('editor') as HTMLTextAreaElement,
-            {
-                lineNumbers: true,
-                value: 'var a = 1;',
+    methods: {
+        initCodeMirror() {
+            this.editor = CodeMirror.fromTextArea(
+                document.getElementById('editor') as HTMLTextAreaElement,
+                {
+                    lineNumbers: true,
+                    value: 'var a = 1;',
+                }
+            )
+
+            this.editor.on('change', () => {
+                store.commit(
+                    'SET_ACTIVE_RS_FILE_VALUE',
+                    this.editor ? this.editor.getValue() : ''
+                )
+            })
+
+            this.editor.setValue(localStorage.getItem(this.filepath) || '')
+        },
+        async initThreeJS() {
+            // THREE JS
+
+            this.camera.position.set(-1, 5, -7)
+            this.camera.rotation.set(0, Math.PI, 0)
+            this.camera.lookAt(new Vector3(0, 0, 0))
+
+            this.renderer = new WebGLRenderer({
+                canvas: document.querySelector(
+                    '#threeeJS'
+                ) as HTMLCanvasElement,
+                antialias: true,
+            })
+            this.renderer.setSize(
+                document.querySelector('#threeeJS')?.clientWidth || 1,
+                document.querySelector('#threeeJS')?.clientHeight || 1
+            )
+            this.renderer.shadowMap.enabled = true
+            this.renderer.setClearColor(0xffffff, 1)
+
+            this.controls = new OrbitControls(
+                this.camera as PerspectiveCamera,
+                this.renderer.domElement
+            )
+            this.controls.enableDamping = true
+            this.controls.enablePan = true
+
+            // World
+            await (await this.world.init()).makeWorld()
+
+            // Charakter
+            this.character = await Character.createDefaultCharacter(this.world)
+
+            this.scene.add(this.world.Mesh, this.character.Mesh)
+
+            // Camera
+            this.camera.aspect =
+                (document.querySelector('#threeeJS')?.clientWidth || 1) /
+                (document.querySelector('#threeeJS')?.clientHeight || 1)
+            this.camera.updateProjectionMatrix()
+            this.renderer?.setSize(
+                document.querySelector('#threeeJS')?.clientWidth || 1,
+                document.querySelector('#threeeJS')?.clientHeight || 1
+            )
+            this.updateThreeJS()
+
+            // Window resize event
+            window.addEventListener('resize', this.resize)
+        },
+
+        // Three JS update loop
+        async updateThreeJS() {
+            this.renderer?.render(this.scene, this.camera)
+
+            this.controls?.update()
+
+            requestAnimationFrame(() => {
+                this.updateThreeJS()
+            })
+        },
+
+        resize() {
+            this.camera.aspect =
+                (document.querySelector('#threeeJS')?.clientWidth || 1) /
+                (document.querySelector('#threeeJS')?.clientHeight || 1)
+            this.camera.updateProjectionMatrix()
+            this.renderer?.setSize(
+                document.querySelector('#threeeJS')?.clientWidth || 1,
+                document.querySelector('#threeeJS')?.clientHeight || 1
+            )
+        },
+
+        // --------------------------------------------------------------------------------------------------------
+        // 3d Controles
+
+        async step() {
+            try {
+                await this.character?.step(1)
+            } catch (e) {
+                console.log(e)
             }
-        )
+        },
+        async turnLeft() {
+            try {
+                await this.character?.turn_left()
+            } catch (e) {
+                console.log(e)
+            }
+        },
+        async turnRight() {
+            try {
+                await this.character?.turn_right()
+            } catch (e) {
+                console.log(e)
+            }
+        },
+
+        async put() {
+            try {
+                await this.character?.put()
+            } catch (e) {
+                console.log(e)
+            }
+        },
+        async pick() {
+            try {
+                await this.character?.pick()
+            } catch (e) {
+                console.log(e)
+            }
+        },
+
+        // --------------------------------------------------------------------------------------------------------
+        // Key events
+
+        handleKeyEvent(e: KeyboardEvent) {
+            if (e.code === 'KeyW') this.step()
+            if (e.code === 'KeyA') this.turnLeft()
+            if (e.code === 'KeyD') this.turnRight()
+            if (e.code === 'KeyP') this.put()
+            if (e.code === 'KeyU') this.pick()
+        },
+    },
+
+    watch: {
+        filepath() {
+            console.log(this.filepath)
+
+            this.editor?.setValue(localStorage.getItem(this.filepath) || '')
+            setTimeout(() => {
+                this.editor?.refresh()
+            }, 1000)
+        },
+    },
+
+    mounted() {
+        this.initCodeMirror()
+        this.initThreeJS()
+
+        window.addEventListener('keydown', this.handleKeyEvent)
+    },
+
+    beforeDestroy() {
+        window.addEventListener('keydown', this.handleKeyEvent)
     },
 })
 </script>
@@ -391,7 +605,7 @@ export default Vue.extend({
 }
 
 .CodeMirror {
-    /* font-family: 'Fira Code'; */
+    font-family: 'Fira Code';
     font-size: 0.93rem !important;
     position: absolute;
     top: 0;
@@ -399,5 +613,14 @@ export default Vue.extend({
     left: 0;
     right: 0;
     height: 100%;
+}
+
+#threeeJS {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: calc(100vh - 112px - 300px - 36px - 34px);
+    padding: 0;
+    margin: 0;
+    display: block;
 }
 </style>

@@ -2,6 +2,36 @@
     <v-container fill-height fliud>
         <v-row align="center" justify="space-around">
             <v-col cols="10" lg="6" xl="6" class="pt-4">
+                <v-alert type="warning">
+                    Diese App befindet sich noch in der Entwicklung. (Alpha
+                    Version) <br />
+                    <v-divider class="my-3" />
+                    Eine Elemente sind nur Designkonzepte und haben keine
+                    Funktion.
+                    <br />
+                    <v-divider class="my-3" />
+                    Außerdem ist diese Version eine Durchmischung der
+                    Desktopversion (Electron) und der Mobileversion / Webversion
+                    (PWA). <br />
+                    Es kann sein, dass beide Versionen nicht den gleichen
+                    Funktionsumfang haben.
+                    <v-divider class="my-3" />
+                    <v-btn
+                        block
+                        href="https://de.wikipedia.org/wiki/Electron_(Framework)"
+                        target="_blank"
+                    >
+                        Was ist Electron?
+                    </v-btn>
+                    <v-btn
+                        block
+                        class="mt-4"
+                        href="https://www.ionos.de/digitalguide/websites/web-entwicklung/progressive-web-apps-welche-vorteile-bieten-sie/"
+                        target="_blank"
+                    >
+                        Was ist eine PWA App?
+                    </v-btn>
+                </v-alert>
                 <v-btn block class="mb-4">
                     <v-icon left>mdi-folder-plus</v-icon>
                     Arbeitsverzeichnis erstellen
@@ -18,6 +48,7 @@
                             v-if="
                                 /\.rmodule/.test(active) || /\.rs/.test(active)
                             "
+                            @click="openRsFile"
                         >
                             <v-icon class="mr-2">mdi-open-in-new</v-icon>
                             Im Editor öffnen
@@ -27,23 +58,224 @@
                             Welt öffnen
                         </v-btn>
                         <v-spacer></v-spacer>
-                        <v-tooltip bottom>
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn icon v-bind="attrs" v-on="on">
-                                    <v-icon>mdi-import</v-icon>
-                                </v-btn>
+
+                        <!-- Import -->
+
+                        <v-dialog max-width="600">
+                            <template v-slot:activator="{ on: dialog }">
+                                <v-tooltip bottom>
+                                    <template
+                                        v-slot:activator="{
+                                            on: tooltip,
+                                            attrs,
+                                        }"
+                                    >
+                                        <v-btn
+                                            icon
+                                            v-bind="attrs"
+                                            v-on="{ ...dialog, ...tooltip }"
+                                        >
+                                            <v-icon>mdi-import</v-icon>
+                                        </v-btn>
+                                    </template>
+                                    <span>Datei importieren</span>
+                                </v-tooltip>
                             </template>
-                            <span>Datei importieren</span>
-                        </v-tooltip>
-                        <v-tooltip bottom>
-                            <template v-slot:activator="{ on, attrs }">
-                                <v-btn icon v-bind="attrs" v-on="on">
-                                    <v-icon>mdi-file-upload</v-icon>
-                                </v-btn>
+                            <template v-slot:default="dialog">
+                                <v-card>
+                                    <v-card-title>
+                                        Datei importieren
+                                    </v-card-title>
+                                    <v-card-text>
+                                        <v-form
+                                            ref="formImport"
+                                            v-model="formImportValid"
+                                        >
+                                            <v-container fluid fill-height>
+                                                <v-row>
+                                                    <v-col cols="8">
+                                                        <v-text-field
+                                                            v-model="
+                                                                formImportLink
+                                                            "
+                                                            label="Link"
+                                                            :rules="[
+                                                                (val) =>
+                                                                    /^(\b(https?|ftp|file):\/\/)?[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]$/.test(
+                                                                        val
+                                                                    ) ||
+                                                                    'Die Eingabe muss ein Link sein',
+                                                                (val) =>
+                                                                    !!val ||
+                                                                    'Dieses Feld muss ausgefüllt werden!',
+                                                            ]"
+                                                            required
+                                                        ></v-text-field>
+                                                    </v-col>
+                                                    <v-col cols="4">
+                                                        <v-select
+                                                            v-model="
+                                                                formImportType
+                                                            "
+                                                            :items="[
+                                                                'RobotScript',
+                                                                'Welt',
+                                                                'Modul',
+                                                            ]"
+                                                            label="Typ"
+                                                            :rules="[
+                                                                (val) =>
+                                                                    !!val ||
+                                                                    'Dieses Feld muss ausgefüllt werden!',
+                                                            ]"
+                                                        ></v-select>
+                                                    </v-col>
+                                                    <v-col
+                                                        cols="12"
+                                                        :class="
+                                                            formImportLink &&
+                                                            /(\.rs|\.rw|\.rmodule)/.test(
+                                                                formImportLink
+                                                            )
+                                                                ? 'd-none'
+                                                                : ''
+                                                        "
+                                                    >
+                                                        <v-text-field
+                                                            v-model="
+                                                                formImportFileName
+                                                            "
+                                                            :rules="[
+                                                                checkFormImportLink,
+                                                            ]"
+                                                            label="Dateiname"
+                                                        ></v-text-field>
+                                                    </v-col>
+                                                </v-row>
+                                            </v-container>
+                                        </v-form>
+                                    </v-card-text>
+                                    <v-card-actions class="justify-end">
+                                        <v-btn
+                                            text
+                                            @click="
+                                                $refs.formImport.reset()
+                                                dialog.value = false
+                                            "
+                                            >Abbrechen</v-btn
+                                        >
+                                        <v-btn
+                                            color="primary"
+                                            text
+                                            @click="
+                                                () => {
+                                                    if (
+                                                        $refs.formImport.validate()
+                                                    ) {
+                                                        formImportFileName = ''
+                                                        importFile()
+                                                        $refs.formImport.reset()
+                                                        dialog.value = false
+                                                    }
+                                                }
+                                            "
+                                            >Importieren</v-btn
+                                        >
+                                    </v-card-actions>
+                                </v-card>
                             </template>
-                            <span>Datei hochladen</span>
-                        </v-tooltip>
-                        <v-tooltip bottom>
+                        </v-dialog>
+
+                        <!-- Upload -->
+
+                        <v-dialog max-width="600">
+                            <template v-slot:activator="{ on: dialog }">
+                                <v-tooltip bottom>
+                                    <template
+                                        v-slot:activator="{
+                                            on: tooltip,
+                                            attrs,
+                                        }"
+                                    >
+                                        <v-btn
+                                            icon
+                                            v-bind="attrs"
+                                            v-on="{ ...dialog, ...tooltip }"
+                                        >
+                                            <v-icon>mdi-file-upload</v-icon>
+                                        </v-btn>
+                                    </template>
+                                    <span>Datei hochladen</span>
+                                </v-tooltip>
+                            </template>
+                            <template v-slot:default="dialog">
+                                <v-card>
+                                    <v-card-title>
+                                        Datei importieren
+                                    </v-card-title>
+                                    <v-card-text>
+                                        <v-form
+                                            ref="formUpload"
+                                            v-model="formImportValid"
+                                        >
+                                            <v-container fluid fill-height>
+                                                <v-row>
+                                                    <v-col cols="12">
+                                                        <v-file-input
+                                                            v-model="
+                                                                formUploadFiles
+                                                            "
+                                                            label="Klicken um Dateien auszuwählen"
+                                                            accept=".rs,.rw,.rmodule"
+                                                            :rules="[
+                                                                (val) =>
+                                                                    val.length !==
+                                                                        0 ||
+                                                                    'Es muss mindestens eine Datei ausgeählt werden!',
+                                                            ]"
+                                                            multiple
+                                                            counter
+                                                            show-size
+                                                        ></v-file-input>
+                                                    </v-col>
+                                                </v-row>
+                                            </v-container>
+                                        </v-form>
+                                    </v-card-text>
+                                    <v-card-actions class="justify-end">
+                                        <v-btn
+                                            text
+                                            @click="
+                                                $refs.formUpload.reset()
+                                                dialog.value = false
+                                            "
+                                            >Abbrechen</v-btn
+                                        >
+                                        <v-btn
+                                            color="primary"
+                                            text
+                                            @click="
+                                                () => {
+                                                    if (
+                                                        $refs.formUpload.validate()
+                                                    ) {
+                                                        uploadFiles()
+                                                        $refs.formUpload.reset()
+                                                        dialog.value = false
+                                                    }
+                                                }
+                                            "
+                                        >
+                                            Hochladen
+                                        </v-btn>
+                                    </v-card-actions>
+                                </v-card>
+                            </template>
+                        </v-dialog>
+
+                        <!-- Share -->
+
+                        <v-tooltip v-if="canShare" bottom>
                             <template v-slot:activator="{ on, attrs }">
                                 <v-btn
                                     :disabled="active.length === 0"
@@ -56,6 +288,9 @@
                             </template>
                             <span>Datei teilen</span>
                         </v-tooltip>
+
+                        <!-- Download -->
+
                         <v-tooltip bottom>
                             <template v-slot:activator="{ on, attrs }">
                                 <v-btn
@@ -63,12 +298,16 @@
                                     icon
                                     v-bind="attrs"
                                     v-on="on"
+                                    @click="downloadFile"
                                 >
                                     <v-icon>mdi-file-download</v-icon>
                                 </v-btn>
                             </template>
                             <span>Datei herunterladen</span>
                         </v-tooltip>
+
+                        <!-- Delete -->
+
                         <v-tooltip bottom>
                             <template v-slot:activator="{ on, attrs }">
                                 <v-btn
@@ -77,6 +316,7 @@
                                     color="red"
                                     v-bind="attrs"
                                     v-on="on"
+                                    @click="deleteFile"
                                 >
                                     <v-icon>mdi-delete</v-icon>
                                 </v-btn>
@@ -118,32 +358,124 @@
 </template>
 
 <script lang="ts">
+import store from '@/store'
 import Vue from 'vue'
 
 export default Vue.extend({
     computed: {
-        filetree: () => [
-            {
-                name: '@storage',
-                type: 'dir',
-                children: [{ name: 'willkommen.rs' }, { name: 'ersteWelt.rw' }],
-            },
-            {
-                name: '@modules',
-                type: 'dir',
-                children: [
-                    { name: 'basic1.rmodule' },
-                    { name: 'basic2.rmodule' },
-                    { name: 'basic3.rmodule' },
-                ],
-            },
-        ],
-        canShare: () => (navigator.share === undefined ? false : true),
+        filetree: () => [store.state.fileTree],
+        canShare: () => false, // (navigator.share === undefined ? false : true),
     },
 
     data: () => ({
-        active: [],
-        open: ['@storage'],
+        active: [] as string[],
+        open: ['@', 'storage'],
+
+        formImportValid: true,
+        formImportLink: '',
+        formImportType: '',
+        formImportFileName: '',
+
+        formUploadFiles: [] as File[],
     }),
+
+    methods: {
+        checkFormImportLink(val: string | null) {
+            if (this.formImportLink === null) this.formImportLink = ''
+            if (val === null) val = ''
+            try {
+                if (!/(\.rs|\.rw|\.rmodule)/.test(this.formImportLink) && !val)
+                    return 'Dieses Feld muss ausgefüllt werden!'
+                return true
+            } catch {
+                return false
+            }
+        },
+        async openRsFile() {
+            store.commit(
+                'SET_ACTIVE_RS_FILE_PATH',
+                store.state.fileTree.searchPath(this.active[0]).join('/')
+            )
+        },
+        // async openRwFile() {
+
+        // },
+
+        async importFile() {
+            const link = this.formImportLink
+            const type = this.formImportType
+            let filename = this.formImportFileName
+
+            const t = await (await fetch(link)).text()
+
+            if (filename == '') {
+                filename = link
+                    .split(/[/?]/g)
+                    .filter((v) => /(\.rs|\.rw|\.rmodule)/.test(v))[0]
+            }
+
+            if (type == 'Modul')
+                this.$store.dispatch('createFile', {
+                    dir: 'modules',
+                    name: /\.rmodule/.test(filename)
+                        ? filename
+                        : `${filename}.rmodule`,
+                    val: t,
+                })
+            else
+                this.$store.dispatch('createFile', {
+                    dir: 'storage',
+                    name:
+                        /\.rs/.test(filename) && type == 'RobotScript'
+                            ? filename
+                            : /\.rw/.test(filename) && type == 'Welt'
+                            ? filename
+                            : type == 'RobotScript'
+                            ? `${filename}.rs`
+                            : `${filename}.rw`,
+                    val: t,
+                })
+        },
+        async uploadFiles() {
+            for (const file of this.formUploadFiles) {
+                const fr = new FileReader()
+                fr.onload = (e: ProgressEvent<FileReader>) => {
+                    const f = e.target?.result
+                    const lines = (f as string).split(/\r\n|\n/)
+                    this.$store.dispatch('createFile', {
+                        dir: 'storage',
+                        name: file.name,
+                        val: lines.join('\n'),
+                    })
+                }
+                fr.onerror = (e) => console.log(e.target?.error?.name)
+
+                fr.readAsText(file)
+            }
+        },
+        async downloadFile() {
+            const filepath = store.state.fileTree
+                .searchPath(this.active[0])
+                .join('/')
+            const type = this.active[0].split('.')[
+                this.active[0].split('.').length - 1
+            ]
+            const file = new Blob([localStorage.getItem(filepath) || ''], {
+                type: `text/${
+                    type == 'rw' ? 'robotworld' : 'robotscript'
+                };charset=utf-8`,
+            })
+            const url = URL.createObjectURL(file)
+            const a = document.createElement('a')
+            a.href = url
+            a.target = '_blank'
+            a.download = this.active[0]
+            a.click()
+            URL.revokeObjectURL(url)
+        },
+        async deleteFile() {
+            store.dispatch('deleteFile', { name: this.active[0] })
+        },
+    },
 })
 </script>
