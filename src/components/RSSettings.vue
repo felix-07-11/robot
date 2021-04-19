@@ -83,7 +83,7 @@
                     <v-alert type="warning">
                         Robot-Script-Module befinden sich noch in der
                         Entwicklung.<br />
-                        Das folgende ist nur ein Dsignkonzept.
+                        Das folgende ist nur ein Designkonzept.
                     </v-alert>
                     <v-simple-table>
                         <template v-slot:default>

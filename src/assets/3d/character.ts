@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { World } from './world'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 
-import legoFigure from '!!url-loader!@/assets/3d/models/characters/LegoMinifigureOhneGesicht2.fbx'
+import legoFigure from '!!url-loader!@/assets/3d/models/characters/lego_minifigure.fbx'
 import { Mesh, MeshBasicMaterial, MeshPhongMaterial } from 'three'
 
 export class Character {
@@ -306,7 +306,7 @@ export class Character {
             mesh as THREE.Mesh,
             world,
             { x: 1, y: 0.58, z: 1 },
-            { x: -Math.PI / 2, y: 0, z: Math.PI / 2 },
+            { x: -Math.PI / 2, y: 0, z: 0 },
             { x: 0.002, y: 0.002, z: 0.002 }
         )
     }

@@ -137,6 +137,18 @@ export class World {
         return this
     }
 
+    async createNewWorld({
+        w = 5,
+        h = 5,
+        d = 8,
+    }: {
+        w: number
+        h: number
+        d: number
+    }) {
+        return `{"size":{"width":${w},"height":${h},"depth":${d}},"resetPosition":{"x":0,"z":0},"boxes":[],"marked":[]}`
+    }
+
     // --------------------------------------------------------------------------------------------------------
     // getters
 

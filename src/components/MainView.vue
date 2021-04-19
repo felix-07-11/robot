@@ -199,6 +199,7 @@
                         <v-card-text>
                             <!-- Script Actions -->
 
+                            <!-- Play -->
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on, attrs }">
                                     <v-btn
@@ -206,28 +207,45 @@
                                         color="green accent-4"
                                         v-bind="attrs"
                                         v-on="on"
+                                        @click="play"
                                     >
                                         <v-icon>mdi-play</v-icon>
                                     </v-btn>
                                 </template>
                                 <span>Programm Starten</span>
                             </v-tooltip>
+
+                            <!-- Next -->
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on, attrs }">
-                                    <v-btn icon v-bind="attrs" v-on="on">
+                                    <v-btn
+                                        icon
+                                        v-bind="attrs"
+                                        v-on="on"
+                                        @click="next"
+                                    >
                                         <v-icon>mdi-skip-next</v-icon>
                                     </v-btn>
                                 </template>
                                 <span>Nächster Schritt</span>
                             </v-tooltip>
+
+                            <!-- Pause -->
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on, attrs }">
-                                    <v-btn icon v-bind="attrs" v-on="on">
+                                    <v-btn
+                                        icon
+                                        v-bind="attrs"
+                                        v-on="on"
+                                        @click="pause"
+                                    >
                                         <v-icon>mdi-pause</v-icon>
                                     </v-btn>
                                 </template>
                                 <span>Pause</span>
                             </v-tooltip>
+
+                            <!-- Stop -->
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on, attrs }">
                                     <v-btn
@@ -235,6 +253,7 @@
                                         color="error"
                                         v-bind="attrs"
                                         v-on="on"
+                                        @click="stop"
                                     >
                                         <v-icon>mdi-stop</v-icon>
                                     </v-btn>
@@ -371,14 +390,95 @@
                         </v-card-text>
                     </v-card>
                 </div>
+
+                <!-- Log -->
+
                 <v-card
-                    class="flex-grow-0 d-flex align-center justify-center"
-                    min-height="300px"
+                    class="flex-grow-0 d-flex flex-row align-center justify-center pa-4"
+                    style="width: 100%"
+                    min-height="220px"
                     flat
-                    >Log Bereich</v-card
                 >
+                    <v-textarea
+                        solo
+                        label=""
+                        readonly
+                        no-resize
+                        v-model="log"
+                        clearable
+                        style="font-family: 'Fira Code'; font-size: 0.93rem"
+                    ></v-textarea>
+                    <div class="px-8">
+                        <svg
+                            v-if="status === 'waiting'"
+                            viewBox="0 0 24 24"
+                            height="120"
+                            width="120"
+                            class="light-blue--text text--lighten-2 turnY"
+                        >
+                            <path
+                                fill="currentColor"
+                                d="M23,12H17V10L20.39,6H17V4H23V6L19.62,10H23V12M15,16H9V14L12.39,10H9V8H15V10L11.62,14H15V16M7,20H1V18L4.39,14H1V12H7V14L3.62,18H7V20Z"
+                            />
+                        </svg>
+                        <svg
+                            v-else-if="status === 'running'"
+                            xmlns="http://www.w3.org/2000/svg"
+                            enable-background="new 0 0 24 24"
+                            viewBox="0 0 24 24"
+                            height="120"
+                            width="120"
+                            class="blue-grey--text text--darken-3 turnZ"
+                        >
+                            <g>
+                                <path d="M0,0h24v24H0V0z" fill="none" />
+                                <path
+                                    d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"
+                                    fill="currentColor"
+                                />
+                            </g>
+                        </svg>
+                        <svg
+                            v-else-if="status === 'error'"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            height="120"
+                            width="120"
+                            class="red--text text--darken-4 turnY"
+                        >
+                            <path d="M0 0h24v24H0z" fill="none" />
+                            <path
+                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+                                fill="currentColor"
+                            />
+                        </svg>
+                        <svg
+                            v-else-if="status === 'done'"
+                            height="120"
+                            width="120"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                fill="currentColor"
+                                d="M14.4,6H20V16H13L12.6,14H7V21H5V4H14L14.4,6M14,14H16V12H18V10H16V8H14V10L13,8V6H11V8H9V6H7V8H9V10H7V12H9V10H11V12H13V10L14,12V14M11,10V8H13V10H11M14,10H16V12H14V10Z"
+                                class="jump"
+                            />
+                        </svg>
+                        <svg
+                            v-else-if="status === 'pause'"
+                            class="blue-grey--text text--darken-4 turnY"
+                            height="120"
+                            width="120"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                fill="currentColor"
+                                d="M14,19H18V5H14M6,19H10V5H6V19Z"
+                            />
+                        </svg>
+                    </div>
+                </v-card>
             </v-col>
-            <!-- Log -->
         </v-row>
     </v-container>
 </template>
@@ -397,6 +497,15 @@ import { World } from '@/assets/3d/world'
 import { Character } from '@/assets/3d/character'
 import { PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three'
 import { OrbitControls } from 'three-orbitcontrols-ts'
+
+// robot script
+import {
+    Interpreter,
+    Nodes,
+    parse,
+    RSError,
+    RSRuntimeError,
+} from '@/assets/robotscript'
 
 export default Vue.extend({
     data: () => ({
@@ -421,6 +530,13 @@ export default Vue.extend({
 
         // Character
         character: null as Character | null,
+
+        // Log
+        log: 'Auf ▶️ drücken um das Programm zu starten...',
+        status: 'waiting' as 'waiting' | 'running' | 'pause' | 'error' | 'done',
+
+        // robot script
+        parsed: null as null | RSError | Nodes,
     }),
 
     computed: {
@@ -430,6 +546,7 @@ export default Vue.extend({
     },
 
     methods: {
+        //#region Init
         initCodeMirror() {
             this.editor = CodeMirror.fromTextArea(
                 document.getElementById('editor') as HTMLTextAreaElement,
@@ -444,6 +561,16 @@ export default Vue.extend({
                     'SET_ACTIVE_RS_FILE_VALUE',
                     this.editor ? this.editor.getValue() : ''
                 )
+
+                this.parsed = parse(this.editor ? this.editor.getValue() : '')
+
+                if (this.parsed instanceof RSError) {
+                    this.log = this.parsed.toString()
+                    this.status = 'error'
+                } else {
+                    this.log = 'Auf ▶️ drücken um das Programm zu starten...'
+                    this.status = 'waiting'
+                }
             })
 
             this.editor.setValue(localStorage.getItem(this.filepath) || '')
@@ -479,7 +606,7 @@ export default Vue.extend({
             await (await this.world.init()).makeWorld()
 
             // Charakter
-            this.character = await Character.createDefaultCharacter(this.world)
+            this.character = await Character.createLegoCharacter(this.world)
 
             this.scene.add(this.world.Mesh, this.character.Mesh)
 
@@ -520,28 +647,70 @@ export default Vue.extend({
             )
         },
 
-        // --------------------------------------------------------------------------------------------------------
-        // 3d Controles
+        //#endregion
+
+        //#region RS Controles
+
+        async play() {
+            if (this.status === 'running') return
+            this.status = 'running'
+            if (this.parsed && !(this.parsed instanceof RSError)) {
+                const i = new Interpreter().run(this.parsed)
+                console.log(i)
+                if (i.error instanceof RSRuntimeError) {
+                    this.status = 'error'
+                    this.log = i.error.toString()
+                } else {
+                    this.status = 'done'
+                    this.log = 'Das Prgramm wurde erfolgreich beedet.'
+                }
+            }
+        },
+
+        async next() {
+            if (this.status !== 'pause') return
+            this.status = 'running'
+        },
+
+        async pause() {
+            if (this.status !== 'running') return
+            this.status = 'pause'
+        },
+
+        async stop() {
+            if (
+                this.status === 'error' ||
+                this.status === 'waiting' ||
+                this.status === 'done'
+            )
+                return
+            this.status = 'done'
+            this.log = 'Das Prgramm wurde abgebrochen.'
+        },
+
+        //#endregion
+
+        //#region 3d Controles
 
         async step() {
             try {
                 await this.character?.step(1)
             } catch (e) {
-                console.log(e)
+                this.changeLog(e)
             }
         },
         async turnLeft() {
             try {
                 await this.character?.turn_left()
             } catch (e) {
-                console.log(e)
+                this.changeLog(e)
             }
         },
         async turnRight() {
             try {
                 await this.character?.turn_right()
             } catch (e) {
-                console.log(e)
+                this.changeLog(e)
             }
         },
 
@@ -549,28 +718,42 @@ export default Vue.extend({
             try {
                 await this.character?.put()
             } catch (e) {
-                console.log(e)
+                this.changeLog(e)
             }
         },
         async pick() {
             try {
                 await this.character?.pick()
             } catch (e) {
-                console.log(e)
+                this.changeLog(e)
             }
         },
 
-        // --------------------------------------------------------------------------------------------------------
-        // Key events
+        //#endregion
+
+        //#region Log
+
+        changeLog(newLog: string) {
+            this.log = `${newLog}\n${this.log === null ? '' : this.log}`
+        },
+
+        //#endregion
+
+        //#region Key events
 
         handleKeyEvent(e: KeyboardEvent) {
+            if (document.activeElement?.nodeName === 'TEXTAREA') return
             if (e.code === 'KeyW') this.step()
             if (e.code === 'KeyA') this.turnLeft()
             if (e.code === 'KeyD') this.turnRight()
             if (e.code === 'KeyP') this.put()
             if (e.code === 'KeyU') this.pick()
         },
+
+        //#endregion
     },
+
+    //#region watch + livecicle events
 
     watch: {
         filepath() {
@@ -593,6 +776,8 @@ export default Vue.extend({
     beforeDestroy() {
         window.addEventListener('keydown', this.handleKeyEvent)
     },
+
+    //#endregion
 })
 </script>
 
@@ -622,5 +807,49 @@ export default Vue.extend({
     padding: 0;
     margin: 0;
     display: block;
+}
+
+.turnY {
+    animation: turnerY 3.5s infinite linear;
+}
+
+.turnZ {
+    animation: turnerZ 4s infinite linear;
+}
+
+.jump {
+    animation: jump 1.4s infinite linear;
+}
+
+@keyframes turnerY {
+    from {
+        transform: rotateY(0deg);
+    }
+    to {
+        transform: rotateY(360deg);
+    }
+}
+
+@keyframes turnerZ {
+    from {
+        transform: rotateZ(0deg);
+    }
+    to {
+        transform: rotateZ(360deg);
+    }
+}
+@keyframes jump {
+    0% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-3px);
+    }
+    50% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(0);
+    }
 }
 </style>
