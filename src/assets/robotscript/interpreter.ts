@@ -74,7 +74,12 @@ export class Interpreter {
 
     private _run_NumberNode(node: Nodes, context: Context) {
         return new RTResult().success(
-            new RSNumber((<NumberNode>node).token.value, context, node.posStart, node.posEnd)
+            new RSNumber(
+                (<NumberNode>node).token.value,
+                context,
+                node.posStart,
+                node.posEnd
+            )
         )
     }
 
@@ -99,6 +104,54 @@ export class Interpreter {
             number = r.number
             error = r.error
         }
+        // equals
+        else if (op.type === 'ee') {
+            const r = left.compareEE(right)
+            number = r.number
+            error = r.error
+        }
+        // not equals
+        else if (op.type === 'ne') {
+            const r = left.compareNE(right)
+            number = r.number
+            error = r.error
+        }
+        // less than
+        else if (op.type === 'lt') {
+            const r = left.compareLT(right)
+            number = r.number
+            error = r.error
+        }
+        // less than equals
+        else if (op.type === 'lte') {
+            const r = left.compareLTE(right)
+            number = r.number
+            error = r.error
+        }
+        // greater than
+        else if (op.type === 'gt') {
+            const r = left.compareGT(right)
+            number = r.number
+            error = r.error
+        }
+        // greater than equals
+        else if (op.type === 'gte') {
+            const r = left.compareGTE(right)
+            number = r.number
+            error = r.error
+        }
+        // logical and
+        else if (op.matches('keyword', 'und')) {
+            const r = left.and(right)
+            number = r.number
+            error = r.error
+        }
+        // logical or
+        else if (op.matches('keyword', 'oder')) {
+            const r = left.or(right)
+            number = r.number
+            error = r.error
+        }
 
         if (error) return res.fail(error)
         else
@@ -120,7 +173,7 @@ export class Interpreter {
                     .number as RSNumber).setPos(node.posStart, node.posEnd)
             )
         return res.success(
-            (number.mul(new RSNumber(-1, context)).number as RSNumber).setPos(
+            (number.mul(new RSNumber(1, context)).number as RSNumber).setPos(
                 node.posStart,
                 node.posEnd
             )
@@ -140,30 +193,24 @@ export class Interpreter {
                 symboltable: new SymbolTable(),
             })
             context.symboltable?.setVar(
-                'a',
-                new RSNumber(
-                    1,
-                    context,
-                    new Position(0, 0, 0),
-                    new Position(0, 0, 0)
-                )
-            )
-            context.symboltable?.setVar(
-                'b',
+                'null',
                 new RSNumber(
                     0,
                     context,
-                    new Position(0, 0, 0),
-                    new Position(0, 0, 0)
                 )
             )
             context.symboltable?.setVar(
-                'c',
+                'wahr',
                 new RSNumber(
-                    9,
+                    1,
                     context,
-                    new Position(0, 0, 0),
-                    new Position(0, 0, 0)
+                )
+            )
+            context.symboltable?.setVar(
+                'falsch',
+                new RSNumber(
+                    0,
+                    context,
                 )
             )
         }
@@ -333,8 +380,6 @@ class RSNumber {
     }
 
     public div(other: RSNumber): ReturnRSNumber {
-        console.log(other)
-
         if (other.value == 0)
             return {
                 number: undefined,
@@ -346,6 +391,82 @@ class RSNumber {
                 ),
             }
         return { number: new RSNumber(this.value / other.value, this._context) }
+    }
+
+    compareEE(other: RSNumber): ReturnRSNumber {
+        return {
+            number: new RSNumber(
+                Number(Number(this.value) == Number(other.value)),
+                this._context
+            ),
+        }
+    }
+
+    compareNE(other: RSNumber): ReturnRSNumber {
+        return {
+            number: new RSNumber(
+                Number(Number(this.value) != Number(other.value)),
+                this._context
+            ),
+        }
+    }
+
+    compareLT(other: RSNumber): ReturnRSNumber {
+        return {
+            number: new RSNumber(
+                Number(Number(this.value) < Number(other.value)),
+                this._context
+            ),
+        }
+    }
+
+    compareLTE(other: RSNumber): ReturnRSNumber {
+        return {
+            number: new RSNumber(
+                Number(Number(this.value) <= Number(other.value)),
+                this._context
+            ),
+        }
+    }
+
+    compareGT(other: RSNumber): ReturnRSNumber {
+        return {
+            number: new RSNumber(
+                Number(Number(this.value) > Number(other.value)),
+                this._context
+            ),
+        }
+    }
+
+    compareGTE(other: RSNumber): ReturnRSNumber {
+        return {
+            number: new RSNumber(
+                Number(Number(this.value) >= Number(other.value)),
+                this._context
+            ),
+        }
+    }
+
+    and(other: RSNumber): ReturnRSNumber {
+        return {
+            number: new RSNumber(
+                Number(Number(this.value) && Number(other.value)),
+                this._context
+            ),
+        }
+    }
+
+    or(other: RSNumber): ReturnRSNumber {
+        return {
+            number: new RSNumber(
+                Number(Number(this.value) || Number(other.value)),
+                this._context
+            ),
+        }
+    }
+
+    not(): ReturnRSNumber {
+        return { number: new RSNumber(this.value == 0 ? 1 : 0, this._context) }
     }
 }
 

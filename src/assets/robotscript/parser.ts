@@ -21,6 +21,12 @@ export class RSIllegalCharError extends RSError {
     }
 }
 
+export class RSExspectedCharError extends RSError {
+    constructor(details: string, posStart: Position, posEnd: Position) {
+        super('Erwartet', details, posStart, posEnd)
+    }
+}
+
 export class RSSyntaxError extends RSError {
     constructor(details: string, posStart: Position, posEnd: Position) {
         super('Syntax Fehler', details, posStart, posEnd)
@@ -43,9 +49,15 @@ export type tokenType =
     | 'eq'
     | 'lparen'
     | 'rparen'
+    | 'ee'
+    | 'ne'
+    | 'lt'
+    | 'gt'
+    | 'lte'
+    | 'gte'
     | 'eof'
 
-export const keywords: string[] = ['var', 'variable']
+export const keywords: string[] = ['var', 'variable', 'und', 'oder', 'nicht']
 
 class Token {
     private _type: tokenType
@@ -147,10 +159,10 @@ class Lexer {
     private _currentChar: string | null = null
 
     constructor(private _text: string) {
-        this._advance()
+        this.advance()
     }
 
-    private _advance() {
+    private advance() {
         this._pos.advance()
         this._currentChar =
             this._text.length > this._pos.index
@@ -162,39 +174,43 @@ class Lexer {
         const tokens = []
 
         while (this._currentChar !== null) {
-            if (/[ \t]/.test(this._currentChar)) this._advance()
+            if (/[ \t]/.test(this._currentChar)) this.advance()
             else if (/[0-9]/.test(this._currentChar)) {
                 tokens.push(this._makeNumber())
-            } else if (/(true|false|wahr|falsch)/.test(this._currentChar)) {
-                tokens.push(new Token({ type: 'boolean', posStart: this._pos }))
-                this._advance()
             } else if (/[A-Za-z_]/.test(this._currentChar)) {
                 tokens.push(this._makeIdentifier())
             } else if (this._currentChar == '+') {
                 tokens.push(new Token({ type: 'plus', posStart: this._pos }))
-                this._advance()
+                this.advance()
             } else if (this._currentChar == '-') {
                 tokens.push(new Token({ type: 'minus', posStart: this._pos }))
-                this._advance()
+                this.advance()
             } else if (this._currentChar == '*') {
                 tokens.push(new Token({ type: 'mul', posStart: this._pos }))
-                this._advance()
+                this.advance()
             } else if (this._currentChar == '/') {
                 tokens.push(new Token({ type: 'div', posStart: this._pos }))
-                this._advance()
-            } else if (this._currentChar == '=') {
-                tokens.push(new Token({ type: 'eq', posStart: this._pos }))
-                this._advance()
+                this.advance()
             } else if (this._currentChar == '(') {
                 tokens.push(new Token({ type: 'lparen', posStart: this._pos }))
-                this._advance()
+                this.advance()
             } else if (this._currentChar == ')') {
                 tokens.push(new Token({ type: 'rparen', posStart: this._pos }))
-                this._advance()
+                this.advance()
+            } else if (this._currentChar == '!') {
+                const r = this._makeNotEquals()
+                if (r instanceof RSError) return { tokens: [], error: r }
+                tokens.push(r)
+            } else if (this._currentChar == '=') {
+                tokens.push(this._makeEquals())
+            } else if (this._currentChar == '<') {
+                tokens.push(this._makeLessThan())
+            } else if (this._currentChar == '>') {
+                tokens.push(this._makeGreaterThan())
             } else {
                 const posStart = this._pos.pos
                 const char = this._currentChar
-                this._advance()
+                this.advance()
                 return {
                     tokens: [],
                     error: new RSIllegalCharError(
@@ -215,7 +231,7 @@ class Lexer {
 
         while (this._currentChar !== null && /[0-9]/.test(this._currentChar)) {
             str += this._currentChar
-            this._advance()
+            this.advance()
         }
 
         return new Token({
@@ -235,7 +251,7 @@ class Lexer {
             /[A-Za-z0-9_]/.test(this._currentChar)
         ) {
             str += this._currentChar
-            this._advance()
+            this.advance()
         }
 
         return new Token({
@@ -244,6 +260,58 @@ class Lexer {
             posStart: pos,
             posEnd: this._pos,
         })
+    }
+
+    private _makeNotEquals() {
+        const pos = this._pos.pos
+        this.advance()
+
+        if (this._currentChar == '=') {
+            this.advance()
+            return new Token({
+                type: 'ne',
+                posStart: pos,
+                posEnd: this._pos,
+            })
+        }
+        this.advance()
+        return new RSExspectedCharError(`'=' nach '!'`, pos, this._pos)
+    }
+
+    private _makeEquals() {
+        const pos = this._pos.pos
+        this.advance()
+
+        if (this._currentChar == '=') {
+            this.advance()
+            return new Token({ type: 'ee', posStart: pos, posEnd: this._pos })
+        }
+
+        return new Token({ type: 'eq', posStart: pos, posEnd: this._pos })
+    }
+
+    private _makeLessThan() {
+        const pos = this._pos.pos
+        this.advance()
+
+        if (this._currentChar == '=') {
+            this.advance()
+            return new Token({ type: 'lte', posStart: pos, posEnd: this._pos })
+        }
+
+        return new Token({ type: 'lt', posStart: pos, posEnd: this._pos })
+    }
+
+    private _makeGreaterThan() {
+        const pos = this._pos.pos
+        this.advance()
+
+        if (this._currentChar == '=') {
+            this.advance()
+            return new Token({ type: 'gte', posStart: pos, posEnd: this._pos })
+        }
+
+        return new Token({ type: 'gt', posStart: pos, posEnd: this._pos })
     }
 }
 
@@ -388,10 +456,6 @@ class ParseResult {
     public lastRegisteredAdvanceCount = 0
     public advanceCount = 0
 
-    register_advancement() {
-        this.advanceCount += 1
-    }
-
     register(res: ParseResult | any) {
         this.advanceCount += res.advanceCount
         if (!(res instanceof ParseResult)) return res
@@ -400,8 +464,7 @@ class ParseResult {
     }
 
     registerAdvancement() {
-        this.lastRegisteredAdvanceCount = 1
-        this.advanceCount++
+        this.advanceCount += 1
     }
 
     success(node: Nodes) {
@@ -420,106 +483,147 @@ class ParseResult {
 //#region Parser
 
 class Parser {
-    private _tokenIndex = -1
-    private _ct!: Token
+    public tokenIndex = -1
+    public ct!: Token
 
     constructor(private _tokens: Token[]) {
-        this._advance()
+        this.advance()
     }
 
-    private _advance() {
-        this._tokenIndex++
-        if (this._tokenIndex < this._tokens.length)
-            this._ct = this._tokens[this._tokenIndex]
-        return this._ct
+    advance() {
+        this.tokenIndex++
+        if (this.tokenIndex < this._tokens.length)
+            this.ct = this._tokens[this.tokenIndex]
+        return this.ct
     }
 
-    private _atom(p: Parser) {
+    atom(p: Parser) {
         const res = new ParseResult()
-        const token = p._ct
+        const token = p.ct
 
         if (token.type === 'number') {
-            res.register(p._advance())
+            res.register(p.advance())
             return res.success(new NumberNode(token))
         } else if (token.type === 'identifier') {
-            res.register(this._advance())
+            res.register(this.advance())
             return res.success(new VarAccessNode(token))
         } else if (token.type === 'lparen') {
-            res.register(p._advance())
-            const expr = res.register(p._expression(p))
+            res.register(p.advance())
+            const expr = res.register(p.expression(p))
             if (res.error) return res
-            if (p._ct.type === 'rparen') {
-                res.register(p._advance())
+            if (p.ct.type === 'rparen') {
+                res.register(p.advance())
                 return res.success(expr)
             }
             return res.fail(
-                new RSSyntaxError(`')' erwartet`, p._ct.posStart, p._ct.posEnd)
+                new RSSyntaxError(`')' erwartet`, p.ct.posStart, p.ct.posEnd)
             )
         }
 
         return res.fail(
             new RSSyntaxError(
                 `'+', '-', '*', '/' oder '(' erwartet`,
-                p._ct.posStart,
-                p._ct.posEnd
+                p.ct.posStart,
+                p.ct.posEnd
             )
         )
     }
 
-    private _factor(p: Parser) {
+    factor(p: Parser) {
         const res = new ParseResult()
-        const token = p._ct
+        const token = p.ct
 
         if (token.type === 'plus' || token.type === 'minus') {
-            res.register(p._advance())
-            const factor = res.register(p._factor(p))
+            res.register(p.advance())
+            const factor = res.register(p.factor(p))
             if (res.error) return res
             return res.success(new UnaryOperationNode(token, factor))
         }
 
-        return p._atom(p)
+        return p.atom(p)
     }
 
-    private _term(p: Parser) {
-        return p._binaryOperation(p, p._factor, ['mul', 'div'])
+    term(p: Parser) {
+        return p.binaryOperation(p, p.factor, ['mul', 'div'])
     }
 
-    private _expression(p: Parser) {
+    compExpr(p: Parser) {
+        const res = new ParseResult()
+
+        if (p.ct.matches('keyword', 'nicht' /* not */)) {
+            const ot = p.ct
+            res.registerAdvancement()
+            p.advance()
+
+            const node = res.register(p.compExpr(p))
+            if (res.error) return res
+
+            return res.success(new UnaryOperationNode(ot, node))
+        }
+
+        const node = res.register(
+            p.binaryOperation(p, p.arithExpr, [
+                'ee',
+                'ne',
+                'gt',
+                'gte',
+                'lt',
+                'lte',
+            ])
+        )
+
+        if (res.error)
+            return res.fail(
+                new RSSyntaxError(
+                    `'+', '-', '*', '/', '(' oder 'nicht' erwartet`,
+                    p.ct.posStart,
+                    p.ct.posEnd
+                )
+            )
+
+        return res.success(node)
+    }
+
+    arithExpr(p: Parser) {
+        return p.binaryOperation(p, p.term, ['plus', 'minus'])
+    }
+
+    expression(p: Parser) {
         const res = new ParseResult()
 
         if (
-            p._ct.matches('keyword', 'var') ||
-            p._ct.matches('keyword', 'variable')
+            p.ct.matches('keyword', 'var') ||
+            p.ct.matches('keyword', 'variable')
         ) {
             res.registerAdvancement()
-            p._advance()
-            if (p._ct.type !== 'identifier')
+            p.advance()
+            if (p.ct.type !== 'identifier')
                 return res.fail(
                     new RSSyntaxError(
                         'Variablenname erwartet',
-                        p._ct.posStart,
-                        p._ct.posEnd
+                        p.ct.posStart,
+                        p.ct.posEnd
                     )
                 )
 
-            const varName = p._ct
+            const varName = p.ct
             res.registerAdvancement()
-            p._advance()
+            p.advance()
 
             // eslint-disable-next-line
             // @ts-ignore
-            if (p._ct.type !== 'eq')
+            if (p.ct.type !== 'eq')
                 return res.fail(
                     new RSSyntaxError(
                         "'=' erwartet",
-                        p._ct.posStart,
-                        p._ct.posEnd
+                        p.ct.posStart,
+                        p.ct.posEnd
                     )
                 )
 
             res.registerAdvancement()
-            p._advance()
-            const expr = res.register(p._expression(p))
+            p.advance()
+            const expr = res.register(p.expression(p))
 
             if (res.error) return res
 
@@ -527,39 +631,55 @@ class Parser {
         }
 
         const node = res.register(
-            p._binaryOperation(p, p._term, ['plus', 'minus'])
+            p.binaryOperation(p, p.compExpr, [
+                { tokenType: 'keyword', value: 'und' }, // and
+                { tokenType: 'keyword', value: 'oder' }, // or
+            ])
         )
 
         if (res.error)
             return res.fail(
                 new RSSyntaxError(
                     "int, identifier, '+', '-' oder '(' erwartet",
-                    p._ct.posStart,
-                    p._ct.posEnd
+                    p.ct.posStart,
+                    p.ct.posEnd
                 )
             )
 
         return res.success(node)
     }
 
-    private _binaryOperation(
+    binaryOperation(
         p: Parser,
         fl: Function, // eslint-disable-line
-        operation: Array<tokenType>,
+        operation: Array<tokenType | { tokenType: tokenType; value: string }>,
         fr?: Function // eslint-disable-line
     ): ParseResult {
         if (!fr) fr = fl
 
         const res = new ParseResult()
 
-        let left = res.register(fr(p))
+        let left = res.register(fl(p))
 
         if (res.error) return res
 
-        while (operation.includes(p._ct.type)) {
-            const opt = p._ct
-            res.register(p._advance())
-            const right = res.register(fl(p))
+        while (
+            operation.includes(p.ct.type) ||
+            operation.some(
+                (item) =>
+                    (item as {
+                        tokenType: tokenType
+                        value: string
+                    }).tokenType == p.ct.type &&
+                    (item as {
+                        tokenType: tokenType
+                        value: string
+                    }).value == p.ct.value
+            )
+        ) {
+            const opt = p.ct
+            res.register(p.advance())
+            const right = res.register(fr(p))
             left = new BinaryOperationNode(left, opt, right)
         }
 
@@ -567,13 +687,14 @@ class Parser {
     }
 
     public parse() {
-        const res = this._expression(this)
-        if (!res.error && this._ct.type !== 'eof')
+        const res = this.expression(this)
+
+        if (!res.error && this.ct.type !== 'eof')
             return res.fail(
                 new RSSyntaxError(
                     `'+', '-', '*' oder '/' erwartet`,
-                    this._ct.posStart,
-                    this._ct.posEnd
+                    this.ct.posStart,
+                    this.ct.posEnd
                 )
             )
         return res

@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { World } from './world'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 
-import legoFigure from '!!url-loader!@/assets/3d/models/characters/lego_minifigure.fbx'
+import legoFigure from '@/assets/3d/models/characters/lego_minifigure.fbx'
 import { Mesh, MeshBasicMaterial, MeshPhongMaterial } from 'three'
 
 export class Character {
