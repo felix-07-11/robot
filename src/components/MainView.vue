@@ -488,6 +488,7 @@ import Vue from 'vue'
 
 // Codemirror
 import CodeMirror from 'codemirror'
+import '@/assets/robotscript/highlighting'
 import 'codemirror/lib/codemirror.css'
 import 'firacode/distr/fira_code.css'
 import store from '@/store'
@@ -552,7 +553,8 @@ export default Vue.extend({
                 document.getElementById('editor') as HTMLTextAreaElement,
                 {
                     lineNumbers: true,
-                    value: 'var a = 1;',
+                    value: '',
+                    mode: 'robotscript',
                 }
             )
 
