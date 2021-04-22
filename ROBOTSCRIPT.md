@@ -3,7 +3,7 @@
   - [Beispiele](#beispiele)
     - [Datentypen](#datentypen)
     - [Variablen definieren](#variablen-definieren)
-    - [Wenm ( If )](#wenm--if-)
+    - [Wenm ( If )](#wenn--if-)
       - [Vergleichsoperatoren](#vergleichsoperatoren)
       - [Besonderheiten](#besonderheiten)
   - [Syntax](#syntax)
@@ -27,7 +27,7 @@
 `variable c = 2`  
 `variable d = falsch`
 
-### Wenm ( If )
+### Wenn ( If )
 ```
 wenn <Bedingung>:
     <wenn Bedingung wahr>
