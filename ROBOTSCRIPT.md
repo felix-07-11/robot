@@ -56,7 +56,7 @@ sonst
 |größer als / gleich|>=|
 
 ```
-1 == 1          -> wahr
+1 == 1           -> wahr
 144 / 12 != 12   -> falsch
 ```
 
