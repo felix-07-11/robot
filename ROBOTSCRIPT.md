@@ -3,7 +3,7 @@
   - [Beispiele](#beispiele)
     - [Datentypen](#datentypen)
     - [Variablen definieren](#variablen-definieren)
-    - [Wenm ( If )](#wenn--if-)
+    - [Wenn ( If )](#wenn--if-)
       - [Vergleichsoperatoren](#vergleichsoperatoren)
       - [Besonderheiten](#besonderheiten)
   - [Syntax](#syntax)
