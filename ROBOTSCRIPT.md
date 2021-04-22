@@ -57,7 +57,7 @@ sonst
 
 ```
 1 == 1          -> wahr
-144 / 2 != 12   -> falsch
+144 / 12 != 12   -> falsch
 ```
 
 #### Besonderheiten
