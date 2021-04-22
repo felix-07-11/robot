@@ -49,15 +49,25 @@ export type tokenType =
     | 'eq'
     | 'lparen'
     | 'rparen'
-    | 'ee'
-    | 'ne'
-    | 'lt'
-    | 'gt'
-    | 'lte'
-    | 'gte'
-    | 'eof'
+    | 'ee' // ==
+    | 'ne' // !=
+    | 'lt' // <
+    | 'gt' // >
+    | 'lte' // <=
+    | 'gte' // >=
+    | 'co' // :
+    | 'as' // *
+    | 'eof' // end
 
-export const keywords: string[] = ['var', 'variable', 'und', 'oder', 'nicht']
+export const keywords: string[] = [
+    'var',
+    'variable',
+    'und',
+    'oder',
+    'nicht',
+    'wenn',
+    'sonst',
+]
 
 class Token {
     private _type: tokenType
@@ -186,8 +196,7 @@ class Lexer {
                 tokens.push(new Token({ type: 'minus', posStart: this._pos }))
                 this.advance()
             } else if (this._currentChar == '*') {
-                tokens.push(new Token({ type: 'mul', posStart: this._pos }))
-                this.advance()
+                tokens.push(this._makeAsterik())
             } else if (this._currentChar == '/') {
                 tokens.push(new Token({ type: 'div', posStart: this._pos }))
                 this.advance()
@@ -196,6 +205,9 @@ class Lexer {
                 this.advance()
             } else if (this._currentChar == ')') {
                 tokens.push(new Token({ type: 'rparen', posStart: this._pos }))
+                this.advance()
+            } else if (this._currentChar == ':') {
+                tokens.push(new Token({ type: 'co', posStart: this._pos }))
                 this.advance()
             } else if (this._currentChar == '!') {
                 const r = this._makeNotEquals()
@@ -313,6 +325,17 @@ class Lexer {
 
         return new Token({ type: 'gt', posStart: pos, posEnd: this._pos })
     }
+
+    private _makeAsterik() {
+        const pos = this._pos.pos
+        this.advance()
+
+        if (this._currentChar && /[A-Za-z_]/.test(this._currentChar)) {
+            return new Token({ type: 'as', posStart: pos, posEnd: this._pos })
+        }
+
+        return new Token({ type: 'mul', posStart: pos, posEnd: this._pos })
+    }
 }
 
 //#endregion
@@ -325,6 +348,7 @@ export type Nodes =
     | UnaryOperationNode
     | VarAssignNode
     | VarAccessNode
+    | IfNode
 
 export class NumberNode {
     constructor(private _token: Token) {}
@@ -446,6 +470,23 @@ export class UnaryOperationNode {
     }
 }
 
+export class IfNode {
+    constructor(
+        private _caseIf: { condition: ParseResult; expression: ParseResult },
+        private _caseElse?: ParseResult | null
+    ) {}
+
+    get posStart(): Position {
+        return this._caseIf.condition.node?.posStart as Position
+    }
+
+    get posEnd(): Position {
+        return this._caseElse
+            ? (this._caseElse.node?.posEnd as Position)
+            : (this._caseIf.condition.node?.posEnd as Position)
+    }
+}
+
 //#endregion
 
 //#region Parse result
@@ -518,6 +559,10 @@ class Parser {
             return res.fail(
                 new RSSyntaxError(`')' erwartet`, p.ct.posStart, p.ct.posEnd)
             )
+        } else if (token.matches('keyword', 'wenn')) {
+            const ifExpr = res.register(p.ifExpr(p))
+            if (res.error) return res
+            return res.success(ifExpr)
         }
 
         return res.fail(
@@ -647,6 +692,69 @@ class Parser {
             )
 
         return res.success(node)
+    }
+
+    ifExpr(p: Parser) {
+        const res = new ParseResult()
+        let caseIf: { condition: ParseResult; expression: ParseResult }
+        let caseElse: ParseResult | null = null
+
+        if (!p.ct.matches('keyword', 'wenn'))
+            return res.fail(
+                new RSSyntaxError(`'wenn' erwartet`, p.ct.posStart, p.ct.posEnd)
+            )
+
+        res.registerAdvancement()
+        p.advance()
+
+        const condition = res.register(p.expression(p))
+        if (res.error) return res
+
+        if (p.ct.type !== 'co')
+            return res.fail(
+                new RSSyntaxError(`':' erwartet`, p.ct.posStart, p.ct.posStart)
+            )
+
+        res.registerAdvancement()
+        p.advance()
+
+        const expression = res.register(p.expression(p))
+        if (res.error) return res
+
+        caseIf = { condition, expression } // eslint-disable-line
+
+        if (p.ct.matches('keyword', 'sonst')) {
+            res.registerAdvancement()
+            p.advance()
+
+            const expression = res.register(p.expression(p))
+            if (res.error) return res
+
+            caseElse = expression
+        }
+
+        // eslint-disable-next-line
+        // @ts-ignore
+        if (p.ct.type !== 'as')
+            return res.fail(
+                new RSSyntaxError(
+                    `'*wenn' erwartet`,
+                    p.ct.posStart,
+                    p.ct.posEnd
+                )
+            )
+
+        p.advance()
+
+        if (!p.ct.matches('keyword', 'wenn'))
+            return res.fail(
+                new RSSyntaxError(`'wenn' erwartet`, p.ct.posStart, p.ct.posEnd)
+            )
+
+        res.registerAdvancement()
+        p.advance()
+
+        return res.success(new IfNode(caseIf, caseElse))
     }
 
     binaryOperation(
