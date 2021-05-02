@@ -4,6 +4,8 @@
     - [Datentypen](#datentypen)
     - [Variablen definieren](#variablen-definieren)
     - [Wenn ( If )](#wenn--if-)
+    - [Widerhole ( For )](#widerhole--for-)
+    - [Wiederhole_solange ( While )](#wiederhole_solange--while-)
       - [Vergleichsoperatoren](#vergleichsoperatoren)
       - [Besonderheiten](#besonderheiten)
   - [Syntax](#syntax)
@@ -45,6 +47,21 @@ sonst
     linksdrehen()
 *wenn
 ```
+
+### Widerhole ( For )
+```
+wiederhole <Zahl, Berechnung, Ausdruck>:
+    <wird wiederholt>
+*wiederhole
+```
+
+### Wiederhole_solange ( While )
+```
+wiederhole_solange <Bedingung>:
+    <wird wiederholt>
+*wiederhole
+```
+
 #### Vergleichsoperatoren
 |Bedeutung|Operator|
 |:---:|:---:|
@@ -89,6 +106,7 @@ falsch != 0 -> falsch
 |lte|<=|
 |gte|>=|
 |co|:|
+|comma|,|
 
 ### Keywords
 |Keyword|Bedeutung|
@@ -104,7 +122,7 @@ falsch != 0 -> falsch
 ### Regeln
 ```
 expr:
-    (Keyword:var | Keyword:variable) Identifier eq expr
+    (Keyword:var | Keyword:variable) identifier eq expr
     comp-expr ((Keyword:und | Keyword:oder) comp-expr)*
 
 comp-expr:
@@ -119,13 +137,18 @@ term:
 
 factor:
     (plus|minus) factor
+    call
+
+call:
+    atom (lparen (expr (comma expr)*)? rparen)?
 
 atom:
-    int|Identifier
+    int|identifier
     lparen expr rparen
     if-expr
     for-expr
     while-expr
+    function-def
 
 if-expr:
     keyword:wenn expr co expr (keyword:sonst expr)? as+keyword:wenn
@@ -135,4 +158,7 @@ for-expr:
 
 while-expr:
     keyword:wiederhole_solange expr co expr as+keyword:wiederhole_solange
+
+function-def:
+    keyword:funktion (lparen (identifier (comma identifier)*)? rparen)? co expr as+keyword:funktion
 ```

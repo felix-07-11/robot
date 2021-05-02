@@ -2,8 +2,10 @@
 
 //#region import
 
+import { register } from 'register-service-worker'
 import {
     BinaryOperationNode,
+    ForNode,
     IfNode,
     Nodes,
     NumberNode,
@@ -12,6 +14,7 @@ import {
     UnaryOperationNode,
     VarAccessNode,
     VarAssignNode,
+    WhileNode,
 } from './parser'
 
 //#endregion
@@ -203,6 +206,46 @@ export class Interpreter {
             const el = res.register(this.run(n.caseElse))
             if (res.error) return res
             return res.success(el)
+        }
+    }
+
+    private _run_ForNode(node: Nodes, context: Context) {
+        const res = new RTResult()
+
+        const n = node as ForNode
+
+        const start = res.register(this.run(n.start, context))
+        if (res.error) return res
+
+        const end = res.register(this.run(n.end, context))
+        if (res.error) return res
+
+        const step = res.register(this.run(n.step, context))
+        if (res.error) return res
+
+        let i = start.value
+
+        while (i < end.value) {
+            res.register(this.run(n.body, context))
+            if (res.error) return res
+
+            i += step.value
+        }
+    }
+
+    private _run_WhileNode(node: Nodes, context: Context) {
+        const res = new RTResult()
+
+        const n = node as WhileNode
+
+        while (true) {
+            const con = res.register(this.run(n.condition, context))
+            if (res.error) return res
+
+            if (!con.isTrue()) break
+
+            res.register(this.run(n.body, context))
+            if (res.error) return res
         }
     }
 
@@ -479,6 +522,7 @@ class RSNumber {
 
     isTrue() {
         if (this.value > 0) return true
+        return false
     }
 }
 

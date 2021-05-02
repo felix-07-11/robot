@@ -128,6 +128,7 @@ export class World {
         if (!this.isInit) throw 'init() methode must be called first!'
         const pj = JSON.parse(json)
         this.size = pj.size
+        this.resetPosition = pj.resetPosition
         this.mesh = createWorld(
             this.TextureFloor,
             this.TextureWall,

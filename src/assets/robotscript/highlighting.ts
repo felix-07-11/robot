@@ -8,17 +8,17 @@ CodeMirror.defineSimpleMode('robotscript', {
         // { regex: /"(?:[^\\]|\\.)*?(?:"|$)/, token: 'string' },
         // You can match multiple tokens at once. Note that the captured
         // groups must span the whole string in this case
-        // {
-        //     // regex: /(function)(\s+)([a-z$][\w$]*)/,
-        //     regex: /(func|function|funk|funktion)(\s+)([a-z$][\w$]*)/,
-        //     token: ['keyword', 'variable-2'],
-        // },
+        {
+            //     // regex: /(function)(\s+)([a-z$][\w$]*)/,
+            regex: /(funktion)(\s+)([a-z$][\w$]*)/,
+            token: ['keyword', 'variable-2'],
+        },
         // Rules are matched in the order in which they appear, so there is
         // no ambiguity between this one and the one above
         {
             // regex: /(?:function|var|return|if|for|while|else|do|this)\b/,
             // regex: /(?:if|else|\*if|wenn|sonst|\*wenn|for|\*for|while|\*while|wiederhole|wiederhole_solange|\*wiederhole|var|variable|\*func|\*function|\*funk|\*funktion)\b/,
-            regex: /(?:und|oder|wenn|sonst|\*wenn|var|variable)\b/,
+            regex: /(?:und|oder|wenn|sonst|\*wenn|wiederhole|wiederhole_solange|\*wiederhole|var|variable|\*funktion)\b/,
             token: 'keyword',
         },
         { regex: /wahr|falsch/, token: 'atom' },

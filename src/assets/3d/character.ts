@@ -88,6 +88,9 @@ export class Character {
     // ########################################################################################################
     // methods
 
+    /**
+     * move the character to the resetposition of the World
+     */
     async reset() {
         this.position = {
             x: this.world.ResetPosition.x,
@@ -319,6 +322,11 @@ export class Character {
     // ########################################################################################################
     // staic methods
 
+    /**
+     * Creates a 'lego' Character
+     * @param world
+     * @returns a Charakter
+     */
     static async createLegoCharacter(world: World) {
         const mesh = await new Promise((resolve) => {
             new FBXLoader().load(legoFigure, (fbx) => {
@@ -348,6 +356,11 @@ export class Character {
         )
     }
 
+    /**
+     * Creates a 'cone' Character
+     * @param world
+     * @returns a Charakter
+     */
     static async createDefaultCharacter(world: World) {
         return new Character(
             new THREE.Mesh(

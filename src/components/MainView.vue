@@ -270,6 +270,7 @@
                                         v-bind="attrs"
                                         v-on="on"
                                         class="ml-4"
+                                        @click="reset"
                                     >
                                         <v-icon>mdi-undo</v-icon>
                                     </v-btn>
@@ -278,7 +279,12 @@
                             </v-tooltip>
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on, attrs }">
-                                    <v-btn icon v-bind="attrs" v-on="on">
+                                    <v-btn
+                                        icon
+                                        v-bind="attrs"
+                                        v-on="on"
+                                        @click="reload"
+                                    >
                                         <v-icon>mdi-reload</v-icon>
                                     </v-btn>
                                 </template>
@@ -743,6 +749,24 @@ export default Vue.extend({
         async removeMark() {
             try {
                 await this.character?.removeMark()
+            } catch (e) {
+                this.changeLog(e)
+            }
+        },
+
+        async reset() {
+            try {
+                await this.character?.reset()
+            } catch (e) {
+                this.changeLog(e)
+            }
+        },
+        async reload() {
+            try {
+                this.scene.remove(this.world.Mesh)
+                await this.world.makeWorld()
+                this.scene.add(this.world.Mesh)
+                await this.character?.reset()
             } catch (e) {
                 this.changeLog(e)
             }

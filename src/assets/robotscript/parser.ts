@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 //#region RS error
 
 export class RSError {
@@ -39,16 +41,15 @@ export class RSSyntaxError extends RSError {
 
 export type tokenType =
     | 'number'
-    | 'boolean'
     | 'identifier'
     | 'keyword'
-    | 'plus'
-    | 'minus'
-    | 'mul'
-    | 'div'
-    | 'eq'
-    | 'lparen'
-    | 'rparen'
+    | 'plus' // +
+    | 'minus' // -
+    | 'mul' // *
+    | 'div' // /
+    | 'eq' // =
+    | 'lparen' // (
+    | 'rparen' // )
     | 'ee' // ==
     | 'ne' // !=
     | 'lt' // <
@@ -57,9 +58,10 @@ export type tokenType =
     | 'gte' // >=
     | 'co' // :
     | 'as' // *
+    | 'comma' // ,
     | 'eof' // end
 
-export const keywords: string[] = [
+export const keywords = [
     'var',
     'variable',
     'und',
@@ -69,6 +71,7 @@ export const keywords: string[] = [
     'sonst',
     'wiederhole',
     'wiederhole_solange',
+    'funktion',
 ]
 
 class Token {
@@ -221,6 +224,9 @@ class Lexer {
                 tokens.push(this._makeLessThan())
             } else if (this._currentChar == '>') {
                 tokens.push(this._makeGreaterThan())
+            } else if (this._currentChar == ',') {
+                tokens.push(new Token({ type: 'comma', posStart: this._pos }))
+                this.advance()
             } else {
                 const posStart = this._pos.pos
                 const char = this._currentChar
@@ -350,6 +356,8 @@ export type Nodes =
     | UnaryOperationNode
     | VarAssignNode
     | VarAccessNode
+    | FunctionDefineNode
+    | FunctionCallNode
     | IfNode
     | ForNode
     | WhileNode
@@ -390,11 +398,11 @@ export class VarAssignNode {
     }
 
     get posStart(): Position {
-        return this._node.posStart as Position
+        return this._node.posStart
     }
 
     get posEnd(): Position {
-        return this._node.posEnd as Position
+        return this._node.posEnd
     }
 }
 
@@ -415,6 +423,64 @@ export class VarAccessNode {
 
     get posEnd() {
         return this._varName.posEnd
+    }
+}
+
+export class FunctionDefineNode {
+    constructor(
+        private _varName: Token,
+        private _args: Token[],
+        private _body: Nodes
+    ) {}
+
+    toString() {
+        return `<function def ${this.varName}>`
+    }
+
+    get varName() {
+        return this._varName
+    }
+
+    get args() {
+        return this._args
+    }
+
+    get body() {
+        return this._body
+    }
+
+    get posStart(): Position {
+        return this._varName.posStart
+    }
+
+    get posEnd(): Position {
+        return this._body.posEnd
+    }
+}
+
+export class FunctionCallNode {
+    constructor(private _callName: Token, private _args: Nodes[]) {}
+
+    toString() {
+        return `<function ${this._callName}>`
+    }
+
+    get callName() {
+        return this._callName
+    }
+
+    get args() {
+        return this._args
+    }
+
+    get posStart(): Position {
+        return this._callName.posStart
+    }
+
+    get posEnd(): Position {
+        return this._args.length === 0
+            ? this._callName.posEnd
+            : this._args[this._args.length - 1].posEnd
     }
 }
 
@@ -508,21 +574,9 @@ export class ForNode {
 
     constructor({
         varName,
-        start = new NumberNode(
-            new Token({
-                type: 'number',
-                posStart: new Position(-1, -1, -1),
-                value: 0,
-            })
-        ),
+        start,
         end,
-        step = new NumberNode(
-            new Token({
-                type: 'number',
-                posStart: new Position(-1, -1, -1),
-                value: 1,
-            })
-        ),
+        step,
         body,
     }: {
         varName?: Nodes
@@ -532,10 +586,44 @@ export class ForNode {
         body: Nodes
     }) {
         this._varName = varName
-        this._start = start
+        this._start =
+            start ||
+            new NumberNode(
+                new Token({
+                    type: 'number',
+                    value: new Number('0'),
+                    posStart: end.posStart,
+                    posEnd: end.posEnd,
+                })
+            )
         this._end = end
-        this._step = step
+        this._step =
+            step ||
+            new NumberNode(
+                new Token({
+                    type: 'number',
+                    value: new Number('1'),
+                    posStart: end.posStart,
+                    posEnd: end.posEnd,
+                })
+            )
         this._body = body
+    }
+
+    get start() {
+        return this._start
+    }
+
+    get end() {
+        return this._end
+    }
+
+    get step() {
+        return this._step
+    }
+
+    get body() {
+        return this._body
     }
 
     get posStart(): Position {
@@ -549,6 +637,14 @@ export class ForNode {
 
 export class WhileNode {
     constructor(private _condition: Nodes, private _body: Nodes) {}
+
+    get condition() {
+        return this._condition
+    }
+
+    get body() {
+        return this._body
+    }
 
     get posStart(): Position {
         return this._condition.posStart
@@ -657,6 +753,13 @@ class Parser {
             const whileExpr = res.register(p.whileExpr(p))
             if (res.error) return res
             return res.success(whileExpr)
+
+            // -----------------------------------------------------------------------
+            // function def
+        } else if (token.matches('keyword', 'funktion')) {
+            const functionDefExpr = res.register(p.functionDefineExpr(p))
+            if (res.error) return res
+            return res.success(functionDefExpr)
         }
 
         return res.fail(
@@ -679,7 +782,7 @@ class Parser {
             return res.success(new UnaryOperationNode(token, factor))
         }
 
-        return p.atom(p)
+        return p.call(p)
     }
 
     term(p: Parser) {
@@ -918,6 +1021,239 @@ class Parser {
 
         res.registerAdvancement()
         p.advance()
+
+        const con = res.register(p.expression(p))
+        if (res.error) return res
+
+        if (p.ct.type !== 'co')
+            return res.fail(
+                new RSSyntaxError(`':' erwartet`, p.ct.posStart, p.ct.posStart)
+            )
+
+        res.registerAdvancement()
+        p.advance()
+
+        const body = res.register(p.expression(p))
+        if (res.error) return res
+
+        // eslint-disable-next-line
+        // @ts-ignore
+        if (p.ct.type !== 'as')
+            return res.fail(
+                new RSSyntaxError(
+                    `'*wiederhole' erwartet`,
+                    p.ct.posStart,
+                    p.ct.posEnd
+                )
+            )
+
+        p.advance()
+
+        if (!p.ct.matches('keyword', 'wiederhole'))
+            return res.fail(
+                new RSSyntaxError(
+                    `'wiederhole' erwartet`,
+                    p.ct.posStart,
+                    p.ct.posEnd
+                )
+            )
+
+        res.registerAdvancement()
+        p.advance()
+
+        return res.success(new WhileNode(con, body))
+    }
+
+    functionDefineExpr(p: Parser) {
+        const res = new ParseResult()
+
+        if (!p.ct.matches('keyword', 'funktion'))
+            return res.fail(
+                new RSSyntaxError(
+                    `'funktion' erwartet`,
+                    p.ct.posStart,
+                    p.ct.posEnd
+                )
+            )
+
+        res.registerAdvancement()
+        p.advance()
+
+        if (p.ct.type !== 'identifier')
+            return res.fail(
+                new RSSyntaxError(
+                    `Funktionsname erwartet`,
+                    p.ct.posStart,
+                    p.ct.posStart
+                )
+            )
+
+        const varName = p.ct
+
+        res.registerAdvancement()
+        p.advance()
+
+        const args: Token[] = []
+
+        // @ts-ignore
+        if (p.ct.type === 'lparen') {
+            res.registerAdvancement()
+            p.advance()
+
+            // @ts-ignore
+            if (p.ct.type === 'identifier') {
+                args.push(p.ct)
+                res.registerAdvancement()
+                p.advance()
+
+                while (p.ct.type === 'comma') {
+                    res.registerAdvancement()
+                    p.advance()
+
+                    if (p.ct.type !== 'identifier')
+                        return res.fail(
+                            new RSSyntaxError(
+                                `Variablenname erwartet`,
+                                p.ct.posStart,
+                                p.ct.posStart
+                            )
+                        )
+
+                    args.push(p.ct)
+                    res.registerAdvancement()
+                    p.advance()
+                }
+
+                // @ts-ignore
+                if (p.ct.type !== 'rparen')
+                    return res.fail(
+                        new RSSyntaxError(
+                            `',' oder ')' erwartet`,
+                            p.ct.posStart,
+                            p.ct.posStart
+                        )
+                    )
+            }
+
+            // @ts-ignore
+            if (p.ct.type !== 'rparen')
+                return res.fail(
+                    new RSSyntaxError(
+                        `Variablenname oder ')' erwartet`,
+                        p.ct.posStart,
+                        p.ct.posStart
+                    )
+                )
+
+            p.advance()
+
+            // @ts-ignore
+            if (p.ct.type !== 'co')
+                return res.fail(
+                    new RSSyntaxError(
+                        `':' erwartet`,
+                        p.ct.posStart,
+                        p.ct.posStart
+                    )
+                )
+        } else {
+            // @ts-ignore
+            if (p.ct.type !== 'co')
+                return res.fail(
+                    new RSSyntaxError(
+                        `'(' oder ':' erwartet`,
+                        p.ct.posStart,
+                        p.ct.posStart
+                    )
+                )
+        }
+
+        res.registerAdvancement()
+        p.advance()
+
+        const body = res.register(p.expression(p))
+        if (res.error) return res
+
+        // @ts-ignore
+        if (p.ct.type !== 'as')
+            return res.fail(
+                new RSSyntaxError(
+                    `'*funktion' erwartet`,
+                    p.ct.posStart,
+                    p.ct.posEnd
+                )
+            )
+
+        p.advance()
+
+        if (!p.ct.matches('keyword', 'funktion'))
+            return res.fail(
+                new RSSyntaxError(
+                    `'funktion' erwartet`,
+                    p.ct.posStart,
+                    p.ct.posEnd
+                )
+            )
+
+        res.registerAdvancement()
+        p.advance()
+
+        return res.success(new FunctionDefineNode(varName, args, body))
+    }
+
+    call(p: Parser) {
+        const res = new ParseResult()
+
+        const atom = res.register(p.atom(p))
+        if (res.error) return res
+
+        if (p.ct.type === 'lparen') {
+            res.registerAdvancement()
+            p.advance()
+            const args: Nodes[] = []
+
+            // @ts-ignore
+            if (p.ct.type === 'rparem') {
+                res.registerAdvancement()
+                p.advance()
+            } else {
+                args.push(res.register(p.expression(p)))
+                if (res.error)
+                    return res.fail(
+                        new RSSyntaxError(
+                            `')', 'wenn', int oder Identifier erwartet`,
+                            p.ct.posStart,
+                            p.ct.posEnd
+                        )
+                    )
+
+                // @ts-ignore
+                while (p.ct.type === 'comma') {
+                    res.registerAdvancement()
+                    p.advance()
+
+                    args.push(res.register(p.expression(p)))
+                    if (res.error) return res
+                }
+
+                // @ts-ignore
+                if (p.ct.type !== 'rparem')
+                    return res.fail(
+                        new RSSyntaxError(
+                            `',' oder ')' erwartet`,
+                            p.ct.posStart,
+                            p.ct.posEnd
+                        )
+                    )
+
+                res.registerAdvancement()
+                p.advance()
+            }
+
+            return res.success(new FunctionCallNode(atom, args))
+        }
+
+        return res.success(atom)
     }
 
     binaryOperation(
