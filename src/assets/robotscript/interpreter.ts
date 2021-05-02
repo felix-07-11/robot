@@ -4,6 +4,7 @@
 
 import {
     BinaryOperationNode,
+    IfNode,
     Nodes,
     NumberNode,
     Position,
@@ -182,6 +183,31 @@ export class Interpreter {
 
     // -----------------------------------------------------
 
+    private _run_IfNode(node: Nodes, context: Context) {
+        const res = new RTResult()
+
+        const n = node as IfNode
+
+        const con = res.register(this.run(n.caseIf.condition, context))
+
+        if (res.error) return res
+
+        if (con.isTrue()) {
+            const ex = res.register(this.run(n.caseIf.expression, context))
+            if (res.error) return res
+
+            return res.success(ex)
+        }
+
+        if (n.caseElse) {
+            const el = res.register(this.run(n.caseElse))
+            if (res.error) return res
+            return res.success(el)
+        }
+    }
+
+    // -----------------------------------------------------
+
     public run(node: Nodes): RTResult
     public run(node: Nodes, context: Context): RTResult
     public run(node: Nodes, context?: Context): RTResult {
@@ -192,27 +218,9 @@ export class Interpreter {
                 displayName: '<programm>',
                 symboltable: new SymbolTable(),
             })
-            context.symboltable?.setVar(
-                'null',
-                new RSNumber(
-                    0,
-                    context,
-                )
-            )
-            context.symboltable?.setVar(
-                'wahr',
-                new RSNumber(
-                    1,
-                    context,
-                )
-            )
-            context.symboltable?.setVar(
-                'falsch',
-                new RSNumber(
-                    0,
-                    context,
-                )
-            )
+            context.symboltable?.setVar('null', new RSNumber(0, context))
+            context.symboltable?.setVar('wahr', new RSNumber(1, context))
+            context.symboltable?.setVar('falsch', new RSNumber(0, context))
         }
 
         if (func_name in this) return (this as any)[func_name](node, context)
@@ -340,7 +348,7 @@ class RSNumber {
     }
 
     toString() {
-        return this.value
+        return this.value.toString()
     }
 
     get posStart() {
@@ -467,6 +475,10 @@ class RSNumber {
 
     not(): ReturnRSNumber {
         return { number: new RSNumber(this.value == 0 ? 1 : 0, this._context) }
+    }
+
+    isTrue() {
+        if (this.value > 0) return true
     }
 }
 

@@ -3,7 +3,7 @@ import { World } from './world'
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 
 import legoFigure from '@/assets/3d/models/characters/lego_minifigure.fbx'
-import { Mesh, MeshBasicMaterial, MeshPhongMaterial } from 'three'
+import { DoubleSide, Mesh, MeshBasicMaterial, MeshPhongMaterial } from 'three'
 
 export class Character {
     private rotation: { x: number; y: number; z: number }
@@ -280,6 +280,42 @@ export class Character {
         await this.world.removeBox(pos.x, pos.z)
     }
 
+    async mark() {
+        const pos: { x: number; y: number; z: number } = JSON.parse(
+            JSON.stringify(this.position)
+        )
+
+        // if (this.direction === 'x') {
+        //     pos.x += 1
+        // } else if (this.direction === '-x') {
+        //     pos.x -= 1
+        // } else if (this.direction === 'z') {
+        //     pos.z += 1
+        // } else if (this.direction === '-z') {
+        //     pos.z -= 1
+        // }
+
+        await this.world.addMark(pos.x, pos.z)
+    }
+
+    async removeMark() {
+        const pos: { x: number; y: number; z: number } = JSON.parse(
+            JSON.stringify(this.position)
+        )
+
+        // if (this.direction === 'x') {
+        //     pos.x += 1
+        // } else if (this.direction === '-x') {
+        //     pos.x -= 1
+        // } else if (this.direction === 'z') {
+        //     pos.z += 1
+        // } else if (this.direction === '-z') {
+        //     pos.z -= 1
+        // }
+
+        await this.world.removeMark(pos.x, pos.z)
+    }
+
     // ########################################################################################################
     // staic methods
 
@@ -299,6 +335,7 @@ export class Character {
                 (model as Mesh).material = new MeshBasicMaterial({
                     color: ((model as Mesh).material as MeshPhongMaterial)
                         .specular,
+                    side: DoubleSide,
                 })
         })
 

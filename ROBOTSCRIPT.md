@@ -97,6 +97,9 @@ falsch != 0 -> falsch
 |variable|Variablendefinierung|
 |und|logisches und (Beide Bedingungen müssen erfüllt sein)|
 |oder|logisches oder (Eine der beiden Bedingungen muss erfüllt sein)|
+|[wenn](#wenn--if-)|führt Code nur aus, wenn die Bedingung "wahr" ist|
+|[wiederhole](#wenn--if-)|einfache Zählschleife|
+|[wiederhole_solange](#wenn--if-)|wiederholt den Code solange die Bedingung "wahr" ist|
 
 ### Regeln
 ```
@@ -121,7 +124,15 @@ atom:
     int|Identifier
     lparen expr rparen
     if-expr
+    for-expr
+    while-expr
 
 if-expr:
     keyword:wenn expr co expr (keyword:sonst expr)? as+keyword:wenn
+
+for-expr:
+    keyword:wiederhole expr co expr as+keyword:wiederhole
+
+while-expr:
+    keyword:wiederhole_solange expr co expr as+keyword:wiederhole_solange
 ```

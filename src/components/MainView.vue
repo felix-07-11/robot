@@ -368,6 +368,7 @@
                                         v-bind="attrs"
                                         v-on="on"
                                         class="ml-4 font-weight-bold"
+                                        @click="mark"
                                     >
                                         M
                                     </v-btn>
@@ -381,6 +382,7 @@
                                         v-bind="attrs"
                                         v-on="on"
                                         class="font-weight-bold"
+                                        @click="removeMark"
                                     >
                                         R
                                     </v-btn>
@@ -658,8 +660,8 @@ export default Vue.extend({
             this.status = 'running'
             if (this.parsed && !(this.parsed instanceof RSError)) {
                 const i = new Interpreter().run(this.parsed)
-                console.log(i)
-                if (i.error instanceof RSRuntimeError) {
+                console.log(i && i.value.toString())
+                if (i && i.error instanceof RSRuntimeError) {
                     this.status = 'error'
                     this.log = i.error.toString()
                 } else {
@@ -731,6 +733,21 @@ export default Vue.extend({
             }
         },
 
+        async mark() {
+            try {
+                await this.character?.mark()
+            } catch (e) {
+                this.changeLog(e)
+            }
+        },
+        async removeMark() {
+            try {
+                await this.character?.removeMark()
+            } catch (e) {
+                this.changeLog(e)
+            }
+        },
+
         //#endregion
 
         //#region Log
@@ -750,6 +767,8 @@ export default Vue.extend({
             if (e.code === 'KeyD') this.turnRight()
             if (e.code === 'KeyP') this.put()
             if (e.code === 'KeyU') this.pick()
+            if (e.code === 'KeyM') this.mark()
+            if (e.code === 'KeyR') this.removeMark()
         },
 
         //#endregion

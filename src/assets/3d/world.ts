@@ -20,7 +20,8 @@ import boxPink from '@/assets/3d/models/box/box.pink.png'
 import boxRed from '@/assets/3d/models/box/box.red.png'
 import boxPurple from '@/assets/3d/models/box/box.purple.png'
 
-import box from '!!url-loader!@/assets/3d/models/box/box.fbx'
+import box from '@/assets/3d/models/box/box.fbx'
+import mark from '@/assets/3d/models/mark/mark.fbx'
 
 export function createFloorPart(texture: Texture) {
     return new Mesh(
@@ -93,11 +94,12 @@ export class World {
     private resetPosition!: { x: number; z: number }
 
     private boxOffset = { x: 1.05, y: 0.25, z: 1 }
+    private markOffset = { x: 1, y: 0.001, z: 1 }
 
     private boxes: {
         [key: string]: { height: number; meshes: Array<Mesh | Group> }
     } = {}
-    private marked: { [key: string]: boolean } = {}
+    private marked: { [key: string]: Mesh | Group } = {}
 
     // Textures
     private TextureFloor!: Texture
@@ -261,6 +263,13 @@ export class World {
                 resolve(fbx)
             })
         })
+        this.mark = await new Promise((resolve) => {
+            new FBXLoader().load(mark, (fbx) => {
+                fbx.scale.set(0.005, 0.005, 0.005)
+                fbx.rotateX(Math.PI / 2)
+                resolve(fbx)
+            })
+        })
     }
 
     private loadTextures() {
@@ -293,6 +302,9 @@ export class World {
             throw `Box kann nicht plaziert werden an der Stelle (${x}|${
                 this.size.height + 1
             }|${z}): Welt zu niedrig!`
+
+        if (x < 0 || x >= this.size.width || z < 0 || z >= this.size.depth)
+            throw `Box kann nicht plaziert werden an der Stelle (${x}|${this.size.height}|${z}): Stelle ist außerhalb der Welt!`
 
         const box = this.box.clone() as Group
 
@@ -331,6 +343,17 @@ export class World {
 
         this.mesh.add(box)
 
+        if (this.marked[`${x}:${z}`] !== undefined) {
+            this.marked[`${x}:${z}`].position.set(
+                this.markOffset.x + x,
+                this.markOffset.y +
+                    (this.boxes[`${x}:${z}`]
+                        ? 0.5 + (this.boxes[`${x}:${z}`].height - 1) / 2
+                        : 0),
+                this.markOffset.z + z
+            )
+        }
+
         return box
     }
 
@@ -344,9 +367,58 @@ export class World {
         this.boxes[`${x}:${z}`].height -= 1
         const box = this.boxes[`${x}:${z}`].meshes.pop()
         this.mesh.remove(box as Object3D)
+
+        if (this.marked[`${x}:${z}`] !== undefined) {
+            this.marked[`${x}:${z}`].position.set(
+                this.markOffset.x + x,
+                this.markOffset.y +
+                    (this.boxes[`${x}:${z}`]
+                        ? 0.5 + (this.boxes[`${x}:${z}`].height - 1) / 2
+                        : 0),
+                this.markOffset.z + z
+            )
+        }
     }
 
-    // addMark(x: number, z: number) {}
+    async addMark(x: number, z: number): Promise<THREE.Group | THREE.Mesh> {
+        if (this.marked[`${x}:${z}`] !== undefined)
+            throw `Markierung kann nicht plaziert werden an der Stelle (${x}|${this.size.height}|${z}): Markierung schon gestzt!`
 
-    // removeMark(x: number, z: number) {}
+        if (x < 0 || x >= this.size.width || z < 0 || z >= this.size.depth)
+            throw `Markierung kann nicht plaziert werden an der Stelle (${x}|${this.size.height}|${z}): Stelle ist außerhalb der Welt!`
+
+        const mark = this.mark.clone() as Group
+
+        mark.traverse((model) => {
+            if ((model as THREE.Mesh).isMesh)
+                (model as THREE.Mesh).material = new MeshBasicMaterial({
+                    color: 'rgb(0,0,0)',
+                    side: DoubleSide,
+                })
+        })
+
+        this.marked[`${x}:${z}`] = mark
+
+        mark.position.set(
+            this.markOffset.x + x,
+            this.markOffset.y +
+                (this.boxes[`${x}:${z}`]
+                    ? 0.5 + (this.boxes[`${x}:${z}`].height - 1) / 2
+                    : 0),
+            this.markOffset.z + z
+        )
+
+        this.mesh.add(mark)
+
+        return mark
+    }
+
+    async removeMark(x: number, z: number) {
+        if (this.marked[`${x}:${z}`] === undefined)
+            throw `Markierung kann nicht entfernt werden an der Stelle (${x}|1|${z}): Keine Markierung vorhanden!`
+
+        this.mesh.remove(this.marked[`${x}:${z}`] as Object3D)
+
+        delete this.marked[`${x}:${z}`]
+    }
 }

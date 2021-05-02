@@ -18,7 +18,7 @@ CodeMirror.defineSimpleMode('robotscript', {
         {
             // regex: /(?:function|var|return|if|for|while|else|do|this)\b/,
             // regex: /(?:if|else|\*if|wenn|sonst|\*wenn|for|\*for|while|\*while|wiederhole|wiederhole_solange|\*wiederhole|var|variable|\*func|\*function|\*funk|\*funktion)\b/,
-            regex: /(?:wenn|sonst|\*wenn|var|variable)\b/,
+            regex: /(?:und|oder|wenn|sonst|\*wenn|var|variable)\b/,
             token: 'keyword',
         },
         { regex: /wahr|falsch/, token: 'atom' },

@@ -67,6 +67,8 @@ export const keywords: string[] = [
     'nicht',
     'wenn',
     'sonst',
+    'wiederhole',
+    'wiederhole_solange',
 ]
 
 class Token {
@@ -349,6 +351,8 @@ export type Nodes =
     | VarAssignNode
     | VarAccessNode
     | IfNode
+    | ForNode
+    | WhileNode
 
 export class NumberNode {
     constructor(private _token: Token) {}
@@ -472,18 +476,86 @@ export class UnaryOperationNode {
 
 export class IfNode {
     constructor(
-        private _caseIf: { condition: ParseResult; expression: ParseResult },
-        private _caseElse?: ParseResult | null
+        private _caseIf: { condition: Nodes; expression: Nodes },
+        private _caseElse?: Nodes | null
     ) {}
 
+    get caseIf() {
+        return this._caseIf
+    }
+
+    get caseElse() {
+        return this._caseElse
+    }
+
     get posStart(): Position {
-        return this._caseIf.condition.node?.posStart as Position
+        return this._caseIf.condition.posStart
     }
 
     get posEnd(): Position {
         return this._caseElse
-            ? (this._caseElse.node?.posEnd as Position)
-            : (this._caseIf.condition.node?.posEnd as Position)
+            ? this._caseElse.posEnd
+            : this._caseIf.expression.posEnd
+    }
+}
+
+export class ForNode {
+    private _varName?: Nodes
+    private _start: Nodes
+    private _end: Nodes
+    private _step: Nodes
+    private _body: Nodes
+
+    constructor({
+        varName,
+        start = new NumberNode(
+            new Token({
+                type: 'number',
+                posStart: new Position(-1, -1, -1),
+                value: 0,
+            })
+        ),
+        end,
+        step = new NumberNode(
+            new Token({
+                type: 'number',
+                posStart: new Position(-1, -1, -1),
+                value: 1,
+            })
+        ),
+        body,
+    }: {
+        varName?: Nodes
+        start?: Nodes
+        end: Nodes
+        step?: Nodes
+        body: Nodes
+    }) {
+        this._varName = varName
+        this._start = start
+        this._end = end
+        this._step = step
+        this._body = body
+    }
+
+    get posStart(): Position {
+        return this._varName ? this._varName.posStart : this._start.posStart
+    }
+
+    get posEnd(): Position {
+        return this._body.posEnd
+    }
+}
+
+export class WhileNode {
+    constructor(private _condition: Nodes, private _body: Nodes) {}
+
+    get posStart(): Position {
+        return this._condition.posStart
+    }
+
+    get posEnd(): Position {
+        return this._body.posEnd
     }
 }
 
@@ -545,9 +617,14 @@ class Parser {
         if (token.type === 'number') {
             res.register(p.advance())
             return res.success(new NumberNode(token))
+
+            // -----------------------------------------------------------------------
+            // var
         } else if (token.type === 'identifier') {
             res.register(this.advance())
             return res.success(new VarAccessNode(token))
+
+            // -----------------------------------------------------------------------
         } else if (token.type === 'lparen') {
             res.register(p.advance())
             const expr = res.register(p.expression(p))
@@ -559,10 +636,27 @@ class Parser {
             return res.fail(
                 new RSSyntaxError(`')' erwartet`, p.ct.posStart, p.ct.posEnd)
             )
+
+            // -----------------------------------------------------------------------
+            // if
         } else if (token.matches('keyword', 'wenn')) {
             const ifExpr = res.register(p.ifExpr(p))
             if (res.error) return res
             return res.success(ifExpr)
+
+            // -----------------------------------------------------------------------
+            // for
+        } else if (token.matches('keyword', 'wiederhole')) {
+            const forExpr = res.register(p.forExpr(p))
+            if (res.error) return res
+            return res.success(forExpr)
+
+            // -----------------------------------------------------------------------
+            // for
+        } else if (token.matches('keyword', 'wiederhole_solange')) {
+            const whileExpr = res.register(p.whileExpr(p))
+            if (res.error) return res
+            return res.success(whileExpr)
         }
 
         return res.fail(
@@ -696,8 +790,8 @@ class Parser {
 
     ifExpr(p: Parser) {
         const res = new ParseResult()
-        let caseIf: { condition: ParseResult; expression: ParseResult }
-        let caseElse: ParseResult | null = null
+        let caseIf: { condition: Nodes; expression: Nodes }
+        let caseElse: Nodes | null = null
 
         if (!p.ct.matches('keyword', 'wenn'))
             return res.fail(
@@ -755,6 +849,75 @@ class Parser {
         p.advance()
 
         return res.success(new IfNode(caseIf, caseElse))
+    }
+
+    forExpr(p: Parser) {
+        const res = new ParseResult()
+
+        if (!p.ct.matches('keyword', 'wiederhole'))
+            return res.fail(
+                new RSSyntaxError(
+                    `'wiederhole' erwartet`,
+                    p.ct.posStart,
+                    p.ct.posEnd
+                )
+            )
+
+        res.registerAdvancement()
+        p.advance()
+
+        const end = res.register(p.expression(p))
+        if (res.error) return res
+
+        if (p.ct.type !== 'co')
+            return res.fail(
+                new RSSyntaxError(`':' erwartet`, p.ct.posStart, p.ct.posStart)
+            )
+
+        res.registerAdvancement()
+        p.advance()
+
+        const body = res.register(p.expression(p))
+        if (res.error) return res
+
+        // eslint-disable-next-line
+        // @ts-ignore
+        if (p.ct.type !== 'as')
+            return res.fail(
+                new RSSyntaxError(
+                    `'*wiederhole' erwartet`,
+                    p.ct.posStart,
+                    p.ct.posEnd
+                )
+            )
+
+        p.advance()
+
+        if (!p.ct.matches('keyword', 'wiederhole'))
+            return res.fail(
+                new RSSyntaxError(`'wenn' erwartet`, p.ct.posStart, p.ct.posEnd)
+            )
+
+        res.registerAdvancement()
+        p.advance()
+
+        return res.success(new ForNode({ end, body }))
+    }
+
+    whileExpr(p: Parser) {
+        const res = new ParseResult()
+
+        if (!p.ct.matches('keyword', 'wiederhole_solange'))
+            return res.fail(
+                new RSSyntaxError(
+                    `'wiederhole_solange' erwartet`,
+                    p.ct.posStart,
+                    p.ct.posEnd
+                )
+            )
+
+        res.registerAdvancement()
+        p.advance()
     }
 
     binaryOperation(
