@@ -285,17 +285,17 @@ export class World {
         this.TextureBoxPurple = new TextureLoader().load(boxPurple)
     }
 
-    async addBox(x: number, z: number): Promise<THREE.Group | THREE.Mesh>
-    async addBox(
+    addBox(x: number, z: number): Group | Mesh
+    addBox(
         x: number,
         z: number,
         color: 'orange' | 'blue' | 'green' | 'pink' | 'red' | 'purple'
-    ): Promise<THREE.Group | THREE.Mesh>
-    async addBox(
+    ): Group | Mesh
+    addBox(
         x: number,
         z: number,
         color: 'orange' | 'blue' | 'green' | 'pink' | 'red' | 'purple' = 'blue'
-    ): Promise<THREE.Group | THREE.Mesh> {
+    ): Group | Mesh {
         if (
             this.boxes[`${x}:${z}`] &&
             this.boxes[`${x}:${z}`].height >= this.size.height
@@ -358,7 +358,7 @@ export class World {
         return box
     }
 
-    async removeBox(x: number, z: number) {
+    removeBox(x: number, z: number) {
         if (
             this.boxes[`${x}:${z}`] === undefined ||
             this.boxes[`${x}:${z}`].height === 0
@@ -381,7 +381,7 @@ export class World {
         }
     }
 
-    async addMark(x: number, z: number): Promise<THREE.Group | THREE.Mesh> {
+    addMark(x: number, z: number): Group | Mesh {
         if (this.marked[`${x}:${z}`] !== undefined)
             throw `Markierung kann nicht plaziert werden an der Stelle (${x}|${this.size.height}|${z}): Markierung schon gestzt!`
 
@@ -414,7 +414,7 @@ export class World {
         return mark
     }
 
-    async removeMark(x: number, z: number) {
+    removeMark(x: number, z: number) {
         if (this.marked[`${x}:${z}`] === undefined)
             throw `Markierung kann nicht entfernt werden an der Stelle (${x}|1|${z}): Keine Markierung vorhanden!`
 

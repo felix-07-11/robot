@@ -121,7 +121,7 @@ export class Character {
         this.direction = 'z'
     }
 
-    async step(n: number, d: 'x' | '-x' | 'z' | '-z' = this.direction) {
+    step(n: number, d: 'x' | '-x' | 'z' | '-z' = this.direction) {
         const old = JSON.parse(JSON.stringify(this.position))
 
         if (d === 'x') {
@@ -166,9 +166,9 @@ export class Character {
         )
     }
 
-    async turn_right(): Promise<void>
-    async turn_right(d: 'x' | '-x' | 'z' | '-z'): Promise<void>
-    async turn_right(d?: 'x' | '-x' | 'z' | '-z'): Promise<void> {
+    turn_right(): void
+    turn_right(d: 'x' | '-x' | 'z' | '-z'): void
+    turn_right(d?: 'x' | '-x' | 'z' | '-z'): void {
         if (d === undefined) {
             this.rotation.z = (this.rotation.z - Math.PI / 2) % (Math.PI * 2)
             this.mesh.rotation.set(
@@ -203,9 +203,9 @@ export class Character {
         else if (rot == (Math.PI / 2) * 3) this.direction = 'x'
     }
 
-    async turn_left(): Promise<void>
-    async turn_left(d: 'x' | '-x' | 'z' | '-z'): Promise<void>
-    async turn_left(d?: 'x' | '-x' | 'z' | '-z'): Promise<void> {
+    turn_left(): void
+    turn_left(d: 'x' | '-x' | 'z' | '-z'): void
+    turn_left(d?: 'x' | '-x' | 'z' | '-z'): void {
         if (d === undefined) {
             this.rotation.z =
                 (this.rotation.z - (Math.PI / 2) * 3) % (Math.PI * 2)
@@ -288,16 +288,6 @@ export class Character {
             JSON.stringify(this.position)
         )
 
-        // if (this.direction === 'x') {
-        //     pos.x += 1
-        // } else if (this.direction === '-x') {
-        //     pos.x -= 1
-        // } else if (this.direction === 'z') {
-        //     pos.z += 1
-        // } else if (this.direction === '-z') {
-        //     pos.z -= 1
-        // }
-
         await this.world.addMark(pos.x, pos.z)
     }
 
@@ -305,16 +295,6 @@ export class Character {
         const pos: { x: number; y: number; z: number } = JSON.parse(
             JSON.stringify(this.position)
         )
-
-        // if (this.direction === 'x') {
-        //     pos.x += 1
-        // } else if (this.direction === '-x') {
-        //     pos.x -= 1
-        // } else if (this.direction === 'z') {
-        //     pos.z += 1
-        // } else if (this.direction === '-z') {
-        //     pos.z -= 1
-        // }
 
         await this.world.removeMark(pos.x, pos.z)
     }

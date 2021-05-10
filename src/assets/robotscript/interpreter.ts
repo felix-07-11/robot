@@ -2,15 +2,19 @@
 
 //#region import
 
-import { register } from 'register-service-worker'
+import { Character } from '../3d/character'
+import { World } from '../3d/world'
 import {
     BinaryOperationNode,
     ForNode,
+    FunctionCallNode,
+    FunctionDefineNode,
     IfNode,
     Nodes,
     NumberNode,
     Position,
     RSError,
+    Token,
     UnaryOperationNode,
     VarAccessNode,
     VarAssignNode,
@@ -43,10 +47,12 @@ export class RSRuntimeError extends RSError {
 //#region Interpreter
 
 export class Interpreter {
+    constructor(private _character: Character, private _world: World) {}
+
     private _run_VarAccessNode(node: Nodes, context: Context) {
         const res = new RTResult()
         const n = node as VarAccessNode
-        let value = context.symboltable?.getVar(n.varName.value)
+        let value = context.symboltable?.getVar(n.varName.value) as RSNumber
 
         if (!value)
             return res.fail(
@@ -58,7 +64,8 @@ export class Interpreter {
                 )
             )
 
-        value = value.copy.setPos(n.posStart, n.posEnd)
+        value = value.copy.setPos(n.posStart, n.posEnd) as RSNumber
+        value.context = context
         return res.success(value)
     }
 
@@ -72,6 +79,54 @@ export class Interpreter {
 
         context.symboltable?.setVar(n.varName.value, value)
         return res.success(value as RSNumber)
+    }
+
+    // -----------------------------------------------------
+
+    private _run_FunctionDefineNode(node: Nodes, context: Context) {
+        const res = new RTResult()
+
+        const n = node as FunctionDefineNode
+
+        const fName = n.varName.value
+        const bodyNode = n.body
+        const args = n.args.map<Token>((arg) => arg.value) as any[]
+        const f = new RSFunction(
+            fName,
+            bodyNode,
+            args,
+            context,
+            node.posStart,
+            node.posEnd
+        )
+
+        context.symboltable?.setVar(fName, f)
+
+        return res.success(f)
+    }
+
+    private _run_FunctionCallNode(node: Nodes, context: Context) {
+        const res = new RTResult()
+
+        const n = node as FunctionCallNode
+
+        const args = []
+        let toCall = res.register(this.run(n.callName, context))
+        if (res.error) return res
+
+        toCall = toCall.copy.setPos(node.posStart, node.posEnd)
+
+        for (const arg of n.args) {
+            args.push(res.register(this.run(arg, context)))
+            if (res.error) return res
+        }
+
+        let rv = res.register(toCall.execute(args))
+        if (res.error) return res
+
+        rv = rv.copy.setPos(n.posStart, n.posEnd)
+        rv.context = context
+        return res.success(rv)
     }
 
     // -----------------------------------------------------
@@ -94,7 +149,7 @@ export class Interpreter {
         )
         const right = res.register(
             this.run((<BinaryOperationNode>node).rightNode, context)
-        )
+        ) as RSNumber
         const op = (<BinaryOperationNode>node).operationToken
 
         let number: RSNumber | undefined = undefined,
@@ -160,7 +215,10 @@ export class Interpreter {
         if (error) return res.fail(error)
         else
             return res.success(
-                (number as RSNumber).setPos(node.posStart, node.posEnd)
+                (number as RSNumber).setPos(
+                    node.posStart,
+                    node.posEnd
+                ) as RSNumber
             )
     }
 
@@ -174,13 +232,16 @@ export class Interpreter {
         if ((<UnaryOperationNode>node).operationToken.type === 'minus')
             return res.success(
                 (number.mul(new RSNumber(-1, context))
-                    .number as RSNumber).setPos(node.posStart, node.posEnd)
+                    .number as RSNumber).setPos(
+                    node.posStart,
+                    node.posEnd
+                ) as RSNumber
             )
         return res.success(
             (number.mul(new RSNumber(1, context)).number as RSNumber).setPos(
                 node.posStart,
                 node.posEnd
-            )
+            ) as RSNumber
         )
     }
 
@@ -214,13 +275,13 @@ export class Interpreter {
 
         const n = node as ForNode
 
-        const start = res.register(this.run(n.start, context))
+        const start = res.register(this.run(n.start, context)) as RSNumber
         if (res.error) return res
 
-        const end = res.register(this.run(n.end, context))
+        const end = res.register(this.run(n.end, context)) as RSNumber
         if (res.error) return res
 
-        const step = res.register(this.run(n.step, context))
+        const step = res.register(this.run(n.step, context)) as RSNumber
         if (res.error) return res
 
         let i = start.value
@@ -258,12 +319,70 @@ export class Interpreter {
 
         if (!context) {
             context = new Context({
+                world: this._world,
+                character: this._character,
                 displayName: '<programm>',
                 symboltable: new SymbolTable(),
             })
             context.symboltable?.setVar('null', new RSNumber(0, context))
             context.symboltable?.setVar('wahr', new RSNumber(1, context))
             context.symboltable?.setVar('falsch', new RSNumber(0, context))
+            context.symboltable?.setVar(
+                'schritt',
+                new RSBuildInFunction('step', context)
+            )
+            context.symboltable?.setVar(
+                'step',
+                new RSBuildInFunction('step', context)
+            )
+            context.symboltable?.setVar(
+                'linksdrehen',
+                new RSBuildInFunction('turnleft', context)
+            )
+            context.symboltable?.setVar(
+                'turnleft',
+                new RSBuildInFunction('turnleft', context)
+            )
+            context.symboltable?.setVar(
+                'rechtsdrehen',
+                new RSBuildInFunction('turnright', context)
+            )
+            context.symboltable?.setVar(
+                'turnright',
+                new RSBuildInFunction('turnright', context)
+            )
+            context.symboltable?.setVar(
+                'hinlegen',
+                new RSBuildInFunction('put', context)
+            )
+            context.symboltable?.setVar(
+                'put',
+                new RSBuildInFunction('put', context)
+            )
+            context.symboltable?.setVar(
+                'aufheben',
+                new RSBuildInFunction('pick', context)
+            )
+            context.symboltable?.setVar(
+                'pick',
+                new RSBuildInFunction('pick', context)
+            )
+            context.symboltable?.setVar(
+                'markieren',
+                new RSBuildInFunction('mark', context)
+            )
+            context.symboltable?.setVar(
+                'mark',
+                new RSBuildInFunction('mark', context)
+            )
+            context.symboltable?.setVar(
+                'markierungLöschen',
+                new RSBuildInFunction('removeMark', context)
+            )
+            context.symboltable?.setVar(
+                'removeMark',
+                new RSBuildInFunction('removeMark', context)
+            )
         }
 
         if (func_name in this) return (this as any)[func_name](node, context)
@@ -276,7 +395,7 @@ export class Interpreter {
 //#region Runtime Result
 
 export class RTResult {
-    private _value!: RSNumber
+    private _value!: Value
     private _error!: RSRuntimeError
 
     constructor() {}
@@ -294,8 +413,8 @@ export class RTResult {
         return res._value
     }
 
-    success(value: RSNumber) {
-        this._value = value
+    success(value?: Value) {
+        if (value) this._value = value
         return this
     }
 
@@ -311,22 +430,30 @@ export class RTResult {
 
 class Context {
     private _displayName: string
-    private _parent: Context | null = null
+    private _parent?: Context
     private _entry: any
-    private _symboltable: SymbolTable | null = null
+    private _symboltable?: SymbolTable
+    public world?: World
+    public character?: Character
 
     constructor({
         displayName,
         entry,
         parent,
         symboltable,
+        world,
+        character,
     }: {
         displayName: string
         entry?: any
         parent?: Context
         symboltable?: SymbolTable
+        world?: World
+        character?: Character
     }) {
         this._displayName = displayName
+        this.world = world
+        this.character = character
         if (entry) this._entry = entry
         if (parent) this._parent = parent
         if (symboltable) this._symboltable = symboltable
@@ -347,18 +474,22 @@ class Context {
 
 class SymbolTable {
     constructor(
-        private _symbols: { [key: string]: any } = {},
+        private _symbols: { [key: string]: Value } = {},
         private _parent?: SymbolTable
     ) {}
 
-    getVar(name: string): any {
+    get symbols() {
+        return this._symbols
+    }
+
+    getVar(name: string): Value | undefined {
         if (!(name in this._symbols) && this._parent)
             return this._parent.getVar(name)
-        if (!(name in this._symbols)) return null
+        if (!(name in this._symbols)) return
         return this._symbols[name]
     }
 
-    setVar(name: string, val: any) {
+    setVar(name: string, val: Value) {
         this._symbols[name] = val
     }
 
@@ -371,18 +502,17 @@ class SymbolTable {
 
 //#region Values
 
-interface ReturnRSNumber {
-    number: RSNumber | undefined
+interface RetrunValue {
+    number?: RSNumber
     error?: RSRuntimeError
 }
 
-class RSNumber {
-    private _posStart!: Position
-    private _posEnd!: Position
+class Value {
+    protected _posStart!: Position
+    protected _posEnd!: Position
 
     constructor(
-        public value: number,
-        private _context: Context,
+        public context: Context,
         posStart?: Position,
         posEnd?: Position
     ) {
@@ -391,7 +521,7 @@ class RSNumber {
     }
 
     toString() {
-        return this.value.toString()
+        throw 'No toString function defined'
     }
 
     get posStart() {
@@ -402,35 +532,131 @@ class RSNumber {
         return this._posEnd
     }
 
-    get copy() {
+    get copy(): Value {
+        console.log(this.constructor.name)
+
+        throw 'No copy function defined'
+    }
+
+    public setPos(posStart: Position, posEnd: Position): Value {
+        this._posStart = posStart
+        this._posEnd = posEnd
+        return this
+    }
+
+    public add(other: RSNumber): RetrunValue {
+        return { error: this.illegalOperation(other as Value) }
+    }
+
+    public sub(other: RSNumber): RetrunValue {
+        return { error: this.illegalOperation(other as Value) }
+    }
+
+    public mul(other: RSNumber): RetrunValue {
+        return { error: this.illegalOperation(other as Value) }
+    }
+
+    public div(other: RSNumber): RetrunValue {
+        return { error: this.illegalOperation(other as Value) }
+    }
+
+    compareEE(other: RSNumber): RetrunValue {
+        return { error: this.illegalOperation(other as Value) }
+    }
+
+    compareNE(other: RSNumber): RetrunValue {
+        return { error: this.illegalOperation(other as Value) }
+    }
+
+    compareLT(other: RSNumber): RetrunValue {
+        return { error: this.illegalOperation(other as Value) }
+    }
+
+    compareLTE(other: RSNumber): RetrunValue {
+        return { error: this.illegalOperation(other as Value) }
+    }
+
+    compareGT(other: RSNumber): RetrunValue {
+        return { error: this.illegalOperation(other as Value) }
+    }
+
+    compareGTE(other: RSNumber): RetrunValue {
+        return { error: this.illegalOperation(other as Value) }
+    }
+
+    and(other: RSNumber): RetrunValue {
+        return { error: this.illegalOperation(other as Value) }
+    }
+
+    or(other: RSNumber): RetrunValue {
+        return { error: this.illegalOperation(other as Value) }
+    }
+
+    not(): RetrunValue {
+        return { error: this.illegalOperation() }
+    }
+
+    execute(args: any) {
+        return new RTResult().fail(this.illegalOperation())
+    }
+
+    isTrue(): boolean {
+        return false
+    }
+
+    illegalOperation(other?: Value) {
+        if (!other) other = this
+
+        return new RSRuntimeError(
+            'Illegal operation',
+            this._posStart,
+            this._posEnd,
+            this.context
+        )
+    }
+}
+
+class RSNumber extends Value {
+    constructor(
+        public value: number,
+        context: Context,
+        posStart?: Position,
+        posEnd?: Position
+    ) {
+        super(context, posStart, posEnd)
+    }
+
+    toString() {
+        return this.value.toString()
+    }
+
+    static get null() {
+        return new RSNumber(0, new Context({ displayName: '<number null>' }))
+    }
+
+    get copy(): Value {
         const copy = new RSNumber(
             this.value,
-            this._context,
+            this.context,
             this.posStart,
             this.posEnd
         )
         return copy
     }
 
-    public setPos(posStart: Position, posEnd: Position): RSNumber {
-        this._posStart = posStart
-        this._posEnd = posEnd
-        return this
+    add(other: RSNumber): RetrunValue {
+        return { number: new RSNumber(this.value + other.value, this.context) }
     }
 
-    public add(other: RSNumber): ReturnRSNumber {
-        return { number: new RSNumber(this.value + other.value, this._context) }
+    sub(other: RSNumber): RetrunValue {
+        return { number: new RSNumber(this.value - other.value, this.context) }
     }
 
-    public sub(other: RSNumber): ReturnRSNumber {
-        return { number: new RSNumber(this.value - other.value, this._context) }
+    mul(other: RSNumber): RetrunValue {
+        return { number: new RSNumber(this.value * other.value, this.context) }
     }
 
-    public mul(other: RSNumber): ReturnRSNumber {
-        return { number: new RSNumber(this.value * other.value, this._context) }
-    }
-
-    public div(other: RSNumber): ReturnRSNumber {
+    div(other: RSNumber): RetrunValue {
         if (other.value == 0)
             return {
                 number: undefined,
@@ -438,91 +664,389 @@ class RSNumber {
                     `Teilen durch 0 nicht möglich`,
                     other.posStart,
                     other.posEnd,
-                    this._context
+                    this.context
                 ),
             }
-        return { number: new RSNumber(this.value / other.value, this._context) }
+        return { number: new RSNumber(this.value / other.value, this.context) }
     }
 
-    compareEE(other: RSNumber): ReturnRSNumber {
+    compareEE(other: RSNumber): RetrunValue {
         return {
             number: new RSNumber(
                 Number(Number(this.value) == Number(other.value)),
-                this._context
+                this.context
             ),
         }
     }
 
-    compareNE(other: RSNumber): ReturnRSNumber {
+    compareNE(other: RSNumber): RetrunValue {
         return {
             number: new RSNumber(
                 Number(Number(this.value) != Number(other.value)),
-                this._context
+                this.context
             ),
         }
     }
 
-    compareLT(other: RSNumber): ReturnRSNumber {
+    compareLT(other: RSNumber): RetrunValue {
         return {
             number: new RSNumber(
                 Number(Number(this.value) < Number(other.value)),
-                this._context
+                this.context
             ),
         }
     }
 
-    compareLTE(other: RSNumber): ReturnRSNumber {
+    compareLTE(other: RSNumber): RetrunValue {
         return {
             number: new RSNumber(
                 Number(Number(this.value) <= Number(other.value)),
-                this._context
+                this.context
             ),
         }
     }
 
-    compareGT(other: RSNumber): ReturnRSNumber {
+    compareGT(other: RSNumber): RetrunValue {
         return {
             number: new RSNumber(
                 Number(Number(this.value) > Number(other.value)),
-                this._context
+                this.context
             ),
         }
     }
 
-    compareGTE(other: RSNumber): ReturnRSNumber {
+    compareGTE(other: RSNumber): RetrunValue {
         return {
             number: new RSNumber(
                 Number(Number(this.value) >= Number(other.value)),
-                this._context
+                this.context
             ),
         }
     }
 
-    and(other: RSNumber): ReturnRSNumber {
+    and(other: RSNumber): RetrunValue {
         return {
             number: new RSNumber(
                 Number(Number(this.value) && Number(other.value)),
-                this._context
+                this.context
             ),
         }
     }
 
-    or(other: RSNumber): ReturnRSNumber {
+    or(other: RSNumber): RetrunValue {
         return {
             number: new RSNumber(
                 Number(Number(this.value) || Number(other.value)),
-                this._context
+                this.context
             ),
         }
     }
 
-    not(): ReturnRSNumber {
-        return { number: new RSNumber(this.value == 0 ? 1 : 0, this._context) }
+    not(): RetrunValue {
+        return { number: new RSNumber(this.value == 0 ? 1 : 0, this.context) }
     }
 
     isTrue() {
         if (this.value > 0) return true
         return false
+    }
+}
+
+class RSBaseFunction extends Value {
+    constructor(protected _name: string, context: Context) {
+        super(context)
+    }
+
+    toString() {
+        return `<function ${this._name}>`
+    }
+
+    genNewContext() {
+        this.context = new Context({
+            world: this.context.world,
+            character: this.context.character,
+            displayName: this._name,
+            symboltable: this.context.symboltable,
+            parent: this.context,
+        })
+        return this.context
+    }
+
+    checkArgs(argsNames: string[], args: any[]) {
+        const res = new RTResult()
+
+        if (args.length < argsNames.length)
+            return res.fail(
+                new RSRuntimeError(
+                    `Zu wenige Argumente an Funktion übergeben. Erwartet: ${argsNames.length}; Übergeben: ${args.length}`,
+                    this._posStart,
+                    this._posEnd,
+                    this.context
+                )
+            )
+
+        return res.success()
+    }
+
+    populateArgs(argsNames: string[], args: any[], executeContext: Context) {
+        for (let i = 0; i < args.length; i++) {
+            if (argsNames[i] === undefined || args[i] === undefined) break
+            args[i].context = executeContext
+            executeContext.symboltable?.setVar(argsNames[i], args[i])
+        }
+    }
+
+    checkPopulateArgs(
+        argsNames: string[],
+        args: any[],
+        executeContext: Context
+    ) {
+        const res = new RTResult()
+
+        res.register(this.checkArgs(argsNames, args))
+        if (res.error) return res
+
+        this.populateArgs(argsNames, args, executeContext)
+
+        return res.success()
+    }
+}
+
+class RSFunction extends RSBaseFunction {
+    constructor(
+        name: string,
+        private _bodyNode: Nodes,
+        private _args: string[],
+        context: Context,
+        posStart?: Position,
+        posEnd?: Position
+    ) {
+        super(name, context)
+        if (posStart && posEnd) this.setPos(posStart, posEnd)
+    }
+
+    get name() {
+        return this._name
+    }
+
+    get bodyNode() {
+        return this._bodyNode
+    }
+
+    get args() {
+        return this._args
+    }
+
+    get copy(): Value {
+        const copy = new RSFunction(
+            this._name,
+            this._bodyNode,
+            this._args,
+            this.context,
+            this.posStart,
+            this.posEnd
+        )
+        return copy
+    }
+
+    execute(args: Value[]) {
+        const res = new RTResult()
+
+        if (!this.context.character || !this.context.world) return res.success()
+        const interpreter = new Interpreter(
+            this.context.character,
+            this.context.world
+        )
+
+        const context = new Context({
+            world: this.context.world,
+            character: this.context.character,
+            displayName: this._name,
+            parent: this.context,
+            symboltable: this.context.symboltable,
+        })
+
+        if (args.length < this._args.length)
+            return res.fail(
+                new RSRuntimeError(
+                    `Zu wenige Argumente an Funktion übergeben. Erwartet: ${this._args.length}; Übergeben: ${args.length}`,
+                    this._posStart,
+                    this._posEnd,
+                    this.context
+                )
+            )
+
+        for (let i = 0; i < args.length; i++) {
+            if (this._args[i] === undefined) break
+            args[i].context = context
+            context.symboltable?.setVar(this._args[i], args[i])
+        }
+
+        const body = res.register(interpreter.run(this._bodyNode, context))
+        if (res.error) return res
+        return res.success(body)
+    }
+}
+
+class RSBuildInFunction extends RSBaseFunction {
+    private _argNames: { [key: string]: string[] } = {
+        function_step: [],
+        function_turnleft: [],
+        function_turnright: [],
+        function_put: [],
+        function_pick: [],
+        function_mark: [],
+        function_remove: [],
+    }
+
+    constructor(name: string, context: Context) {
+        super(name, context)
+    }
+
+    toString() {
+        return `<build-in-function ${this._name}>`
+    }
+
+    get copy(): Value {
+        const copy = new RSBuildInFunction(this._name, this.context)
+        return copy
+    }
+
+    execute(args: Value[]) {
+        const res = new RTResult()
+
+        const executeConetext = this.genNewContext()
+
+        const fname = `function_${this._name}`
+        const f = (this as any)[`_${fname}`]
+            ? (this as any)[`_${fname}`]
+            : this._noDefinedFunction
+
+        res.register(
+            this.checkPopulateArgs(this._argNames[fname], args, executeConetext)
+        )
+        if (res.error) return res
+
+        const rv = res.register(f(executeConetext))
+        if (res.error) return res
+
+        return res.success(rv)
+    }
+
+    private _noDefinedFunction(...args: any[]) {
+        throw `No function '${this._name}' definded!`
+    }
+
+    private _function_step(executeConetext: Context) {
+        try {
+            executeConetext.character?.step(1)
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(
+                    e,
+                    this._posStart,
+                    this._posEnd,
+                    executeConetext
+                )
+            )
+        }
+    }
+
+    private _function_turnleft(executeConetext: Context) {
+        try {
+            executeConetext.character?.turn_left()
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(
+                    e,
+                    this._posStart,
+                    this._posEnd,
+                    executeConetext
+                )
+            )
+        }
+    }
+
+    private _function_turnright(executeConetext: Context) {
+        try {
+            executeConetext.character?.turn_right()
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(
+                    e,
+                    this._posStart,
+                    this._posEnd,
+                    executeConetext
+                )
+            )
+        }
+    }
+
+    private _function_put(executeConetext: Context) {
+        try {
+            executeConetext.character?.put()
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(
+                    e,
+                    this._posStart,
+                    this._posEnd,
+                    executeConetext
+                )
+            )
+        }
+    }
+
+    private _function_pick(executeConetext: Context) {
+        try {
+            executeConetext.character?.pick()
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(
+                    e,
+                    this._posStart,
+                    this._posEnd,
+                    executeConetext
+                )
+            )
+        }
+    }
+
+    private _function_mark(executeConetext: Context) {
+        try {
+            executeConetext.character?.mark()
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(
+                    e,
+                    this._posStart,
+                    this._posEnd,
+                    executeConetext
+                )
+            )
+        }
+    }
+
+    private _function_removeMark(executeConetext: Context) {
+        try {
+            executeConetext.character?.removeMark()
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(
+                    e,
+                    this._posStart,
+                    this._posEnd,
+                    executeConetext
+                )
+            )
+        }
     }
 }
 

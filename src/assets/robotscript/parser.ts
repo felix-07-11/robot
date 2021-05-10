@@ -74,7 +74,7 @@ export const keywords = [
     'funktion',
 ]
 
-class Token {
+export class Token {
     private _type: tokenType
     private _value: any = null
     private _posStart: Position
@@ -459,7 +459,7 @@ export class FunctionDefineNode {
 }
 
 export class FunctionCallNode {
-    constructor(private _callName: Token, private _args: Nodes[]) {}
+    constructor(private _callName: Nodes, private _args: Nodes[]) {}
 
     toString() {
         return `<function ${this._callName}>`
@@ -1211,9 +1211,8 @@ class Parser {
             res.registerAdvancement()
             p.advance()
             const args: Nodes[] = []
-
             // @ts-ignore
-            if (p.ct.type === 'rparem') {
+            if (p.ct.type === 'rparen') {
                 res.registerAdvancement()
                 p.advance()
             } else {
@@ -1237,7 +1236,7 @@ class Parser {
                 }
 
                 // @ts-ignore
-                if (p.ct.type !== 'rparem')
+                if (p.ct.type !== 'rparen')
                     return res.fail(
                         new RSSyntaxError(
                             `',' oder ')' erwartet`,
