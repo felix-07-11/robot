@@ -192,7 +192,7 @@ class Lexer {
             if (/[ \t]/.test(this._currentChar)) this.advance()
             else if (/[0-9]/.test(this._currentChar)) {
                 tokens.push(this._makeNumber())
-            } else if (/[A-Za-z_]/.test(this._currentChar)) {
+            } else if (/[A-Za-z_ÄäÖöÜüß]/.test(this._currentChar)) {
                 tokens.push(this._makeIdentifier())
             } else if (this._currentChar == '+') {
                 tokens.push(new Token({ type: 'plus', posStart: this._pos }))
@@ -268,7 +268,7 @@ class Lexer {
 
         while (
             this._currentChar !== null &&
-            /[A-Za-z0-9_]/.test(this._currentChar)
+            /[A-Za-z0-9_ÄäÖöÜüß]/.test(this._currentChar)
         ) {
             str += this._currentChar
             this.advance()

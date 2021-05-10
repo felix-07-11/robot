@@ -896,7 +896,7 @@ class RSBuildInFunction extends RSBaseFunction {
         function_put: [],
         function_pick: [],
         function_mark: [],
-        function_remove: [],
+        function_removeMark: [],
     }
 
     constructor(name: string, context: Context) {
