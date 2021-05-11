@@ -665,10 +665,9 @@ export default Vue.extend({
             if (this.status === 'running' || !this.character) return
             this.status = 'running'
             if (this.parsed && !(this.parsed instanceof RSError)) {
-                const i = new Interpreter(this.character, this.world).run(
+                const i = await new Interpreter(this.character, this.world).run(
                     this.parsed
                 )
-                console.log(i && i.value.toString())
                 if (i && i.error instanceof RSRuntimeError) {
                     this.status = 'error'
                     this.log = i.error.toString()

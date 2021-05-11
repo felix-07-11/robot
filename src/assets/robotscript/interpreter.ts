@@ -56,70 +56,99 @@ export class Interpreter {
             displayName: '<programm>',
             symboltable: new SymbolTable(),
         })
-        context.symboltable?.setVar('null', new RSNumber(0, context))
-        context.symboltable?.setVar('wahr', new RSNumber(1, context))
-        context.symboltable?.setVar('falsch', new RSNumber(0, context))
+        context.symboltable?.setVar('null',  RSNumber.null)
+
+        context.symboltable?.setVar('wahr', RSNumber.true)
+        context.symboltable?.setVar('true', RSNumber.true)
+
+        context.symboltable?.setVar('falsch', RSNumber.false)
+        context.symboltable?.setVar('false', RSNumber.false)
+
         context.symboltable?.setVar(
             'schritt',
-            new RSBuildInFunction('step', context)
+            new RSBuildInFunction('schritt', context)
         )
         context.symboltable?.setVar(
             'step',
             new RSBuildInFunction('step', context)
         )
+
         context.symboltable?.setVar(
             'linksdrehen',
-            new RSBuildInFunction('turnleft', context)
+            new RSBuildInFunction('linksdrehen', context)
         )
         context.symboltable?.setVar(
             'turnleft',
             new RSBuildInFunction('turnleft', context)
         )
+
         context.symboltable?.setVar(
             'rechtsdrehen',
-            new RSBuildInFunction('turnright', context)
+            new RSBuildInFunction('rechtsdrehen', context)
         )
         context.symboltable?.setVar(
             'turnright',
             new RSBuildInFunction('turnright', context)
         )
+
         context.symboltable?.setVar(
             'hinlegen',
-            new RSBuildInFunction('put', context)
+            new RSBuildInFunction('hinlegen', context)
         )
         context.symboltable?.setVar(
             'put',
             new RSBuildInFunction('put', context)
         )
+
         context.symboltable?.setVar(
             'aufheben',
-            new RSBuildInFunction('pick', context)
+            new RSBuildInFunction('aufheben', context)
         )
         context.symboltable?.setVar(
             'pick',
             new RSBuildInFunction('pick', context)
         )
+
         context.symboltable?.setVar(
             'markieren',
-            new RSBuildInFunction('mark', context)
+            new RSBuildInFunction('markieren', context)
         )
         context.symboltable?.setVar(
             'mark',
             new RSBuildInFunction('mark', context)
         )
+
         context.symboltable?.setVar(
             'markierungLöschen',
-            new RSBuildInFunction('removeMark', context)
+            new RSBuildInFunction('markierungLöschen', context)
         )
         context.symboltable?.setVar(
             'removeMark',
             new RSBuildInFunction('removeMark', context)
         )
 
+        context.symboltable?.setVar(
+            'isWall',
+            new RSBuildInFunction('isWall', context)
+        )
+        context.symboltable?.setVar(
+            'istWand',
+            new RSBuildInFunction('istWand', context)
+        )
+
+        context.symboltable?.setVar(
+            'notIsWall',
+            new RSBuildInFunction('notIsWall', context)
+        )
+        context.symboltable?.setVar(
+            'nichtIstWand',
+            new RSBuildInFunction('nichtIstWand', context)
+        )
+        
         this.context = context
     }
 
-    private _run_VarAccessNode(node: Nodes, context: Context) {
+    private async _run_VarAccessNode(node: Nodes, context: Context) {
         const res = new RTResult()
         const n = node as VarAccessNode
         let value = context.symboltable?.getVar(n.varName.value) as RSNumber
@@ -140,11 +169,11 @@ export class Interpreter {
         return res.success(value)
     }
 
-    private _run_VarAssignNode(node: Nodes, context: Context) {
+    private async _run_VarAssignNode(node: Nodes, context: Context) {
         const res = new RTResult()
         const n = node as VarAssignNode
 
-        const value = res.register(this.run(n.node, context))
+        const value = res.register(await this.run(n.node, context))
 
         if (res.error) return res
 
@@ -154,7 +183,7 @@ export class Interpreter {
 
     // -----------------------------------------------------
 
-    private _run_FunctionDefineNode(node: Nodes, context: Context) {
+    private async _run_FunctionDefineNode(node: Nodes, context: Context) {
         const res = new RTResult()
 
         const n = node as FunctionDefineNode
@@ -176,23 +205,23 @@ export class Interpreter {
         return res.success(f)
     }
 
-    private _run_FunctionCallNode(node: Nodes, context: Context) {
+    private async _run_FunctionCallNode(node: Nodes, context: Context) {
         const res = new RTResult()
 
         const n = node as FunctionCallNode
 
         const args = []
-        let toCall = res.register(this.run(n.callName, context))
+        let toCall = res.register(await this.run(n.callName, context))
         if (res.error) return res
 
         toCall = toCall.copy.setPos(node.posStart, node.posEnd)
 
-        for (const arg of n.args) {
-            args.push(res.register(this.run(arg, context)))
+        for await (const arg of n.args) {
+            args.push(res.register(await this.run(arg, context)))
             if (res.error) return res
         }
 
-        let rv = res.register(toCall.execute(args))
+        let rv = res.register(await toCall.execute(args))
         if (res.error) return res
 
         rv = rv.copy.setPos(n.posStart, n.posEnd)
@@ -202,7 +231,7 @@ export class Interpreter {
 
     // -----------------------------------------------------
 
-    private _run_NumberNode(node: Nodes, context: Context) {
+    private async _run_NumberNode(node: Nodes, context: Context) {
         return new RTResult().success(
             new RSNumber(
                 (<NumberNode>node).token.value,
@@ -213,13 +242,13 @@ export class Interpreter {
         )
     }
 
-    private _run_BinaryOperationNode(node: Nodes, context: Context) {
+    private async _run_BinaryOperationNode(node: Nodes, context: Context) {
         const res = new RTResult()
         const left = res.register(
-            this.run((<BinaryOperationNode>node).leftNode, context)
+            await this.run((<BinaryOperationNode>node).leftNode, context)
         )
         const right = res.register(
-            this.run((<BinaryOperationNode>node).rightNode, context)
+            await this.run((<BinaryOperationNode>node).rightNode, context)
         ) as RSNumber
         const op = (<BinaryOperationNode>node).operationToken
 
@@ -286,10 +315,10 @@ export class Interpreter {
         }
     }
 
-    private _run_UnaryOperationNode(node: Nodes, context: Context) {
+    private async _run_UnaryOperationNode(node: Nodes, context: Context) {
         const res = new RTResult()
         const number = res.register(
-            this.run((<UnaryOperationNode>node).node, context)
+            await this.run((<UnaryOperationNode>node).node, context)
         )
         if (res.error) return res
 
@@ -312,81 +341,84 @@ export class Interpreter {
 
     // -----------------------------------------------------
 
-    private _run_IfNode(node: Nodes, context: Context) {
+    private async _run_IfNode(node: Nodes, context: Context) {
         const res = new RTResult()
 
         const n = node as IfNode
 
-        const con = res.register(this.run(n.caseIf.condition, context))
+        const con = res.register(await this.run(n.caseIf.condition, context))
 
         if (res.error) return res
 
         if (con.isTrue()) {
-            const ex = res.register(this.run(n.caseIf.expression, context))
+            const ex = res.register(
+                await this.run(n.caseIf.expression, context)
+            )
             if (res.error) return res
 
             return res.success(ex)
         }
 
         if (n.caseElse) {
-            const el = res.register(this.run(n.caseElse))
+            const el = res.register(await this.run(n.caseElse))
             if (res.error) return res
             return res.success(el)
         }
     }
 
-    private _run_ForNode(node: Nodes, context: Context) {
+    private async _run_ForNode(node: Nodes, context: Context) {
         const res = new RTResult()
 
         const n = node as ForNode
 
-        const start = res.register(this.run(n.start, context)) as RSNumber
+        const start = res.register(await this.run(n.start, context)) as RSNumber
         if (res.error) return res
 
-        const end = res.register(this.run(n.end, context)) as RSNumber
+        const end = res.register(await this.run(n.end, context)) as RSNumber
         if (res.error) return res
 
-        const step = res.register(this.run(n.step, context)) as RSNumber
+        const step = res.register(await this.run(n.step, context)) as RSNumber
         if (res.error) return res
 
         let i = start.value
 
         while (i < end.value) {
-            res.register(this.run(n.body, context))
+            res.register(await this.run(n.body, context))
             if (res.error) return res
 
             i += step.value
         }
     }
 
-    private _run_WhileNode(node: Nodes, context: Context) {
+    private async _run_WhileNode(node: Nodes, context: Context) {
         const res = new RTResult()
 
         const n = node as WhileNode
 
         while (true) {
-            const con = res.register(this.run(n.condition, context))
+            const con = res.register(await this.run(n.condition, context))
             if (res.error) return res
 
             if (!con.isTrue()) break
 
-            res.register(this.run(n.body, context))
+            res.register(await this.run(n.body, context))
             if (res.error) return res
         }
     }
 
     // -----------------------------------------------------
 
-    public run(node: Nodes): RTResult
-    public run(node: Nodes, context: Context): RTResult
-    public run(node: Nodes, context?: Context): RTResult {
+    public async run(node: Nodes): Promise<RTResult>
+    public async run(node: Nodes, context: Context): Promise<RTResult>
+    public async run(node: Nodes, context?: Context): Promise<RTResult> {
         const func_name = `_run_${node.constructor.name}`
 
         if (!context) {
             context = this.context
         }
 
-        if (func_name in this) return (this as any)[func_name](node, context)
+        if (func_name in this)
+            return await (this as any)[func_name](node, context)
         else throw new Error(`No ${func_name} method defined`)
     }
 }
@@ -522,7 +554,7 @@ class Value {
         if (posEnd) this._posEnd = posEnd
     }
 
-    toString() {
+    toString(): string {
         throw 'No toString function defined'
     }
 
@@ -598,7 +630,7 @@ class Value {
         return { error: this.illegalOperation() }
     }
 
-    execute(args: any) {
+    async execute(args: any) {
         return new RTResult().fail(this.illegalOperation())
     }
 
@@ -861,7 +893,7 @@ class RSFunction extends RSBaseFunction {
         return copy
     }
 
-    execute(args: Value[]) {
+    async execute(args: Value[]) {
         const res = new RTResult()
 
         if (!this.context.character || !this.context.world) return res.success()
@@ -895,7 +927,9 @@ class RSFunction extends RSBaseFunction {
             context.symboltable?.setVar(this._args[i], args[i])
         }
 
-        const body = res.register(interpreter.run(this._bodyNode, context))
+        const body = res.register(
+            await interpreter.run(this._bodyNode, context)
+        )
         if (res.error) return res
         return res.success(body)
     }
@@ -904,12 +938,24 @@ class RSFunction extends RSBaseFunction {
 class RSBuildInFunction extends RSBaseFunction {
     private _argNames: { [key: string]: string[] } = {
         function_step: [],
+        function_schritt: [],
         function_turnleft: [],
+        function_rechtsdrehen: [],
         function_turnright: [],
+        function_linksdrehen: [],
         function_put: [],
+        function_hinlegen: [],
         function_pick: [],
+        function_aufheben: [],
         function_mark: [],
+        function_markieren: [],
         function_removeMark: [],
+        function_markierungLöschen: [],
+
+        function_isWall: [],
+        function_istWand: [],
+        function_notIsWall: [],
+        function_nichtIstWand: [],
     }
 
     constructor(name: string, context: Context) {
@@ -925,7 +971,7 @@ class RSBuildInFunction extends RSBaseFunction {
         return copy
     }
 
-    execute(args: Value[]) {
+    async execute(args: Value[]) {
         const res = new RTResult()
 
         const executeConetext = this.genNewContext()
@@ -940,7 +986,7 @@ class RSBuildInFunction extends RSBaseFunction {
         )
         if (res.error) return res
 
-        const rv = res.register(f(executeConetext))
+        const rv = res.register(await f(this, executeConetext))
         if (res.error) return res
 
         return res.success(rv)
@@ -950,123 +996,210 @@ class RSBuildInFunction extends RSBaseFunction {
         throw `No function '${this._name}' definded!`
     }
 
-    private async _function_step(executeConetext: Context) {
+    private async _function_step(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
         try {
             await executeConetext.character?.step(1)
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(
-                new RSRuntimeError(
-                    e,
-                    this._posStart,
-                    this._posEnd,
-                    executeConetext
-                )
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
         }
     }
 
-    private async _function_turnleft(executeConetext: Context) {
+    private async _function_schritt(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
+        try {
+            await executeConetext.character?.step(1)
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
+            )
+        }
+    }
+
+    private async _function_turnleft(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
         try {
             await executeConetext.character?.turn_left()
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(
-                new RSRuntimeError(
-                    e,
-                    this._posStart,
-                    this._posEnd,
-                    executeConetext
-                )
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
         }
     }
 
-    private async _function_turnright(executeConetext: Context) {
+    private async _function_linksdrehen(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
+        try {
+            await executeConetext.character?.turn_left()
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
+            )
+        }
+    }
+
+    private async _function_turnright(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
         try {
             await executeConetext.character?.turn_right()
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(
-                new RSRuntimeError(
-                    e,
-                    this._posStart,
-                    this._posEnd,
-                    executeConetext
-                )
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
         }
     }
 
-    private async _function_put(executeConetext: Context) {
+    private async _function_rechtsdrehen(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
+        try {
+            await executeConetext.character?.turn_right()
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
+            )
+        }
+    }
+
+    private async _function_put(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
         try {
             await executeConetext.character?.put()
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(
-                new RSRuntimeError(
-                    e,
-                    this._posStart,
-                    this._posEnd,
-                    executeConetext
-                )
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
         }
     }
 
-    private async _function_pick(executeConetext: Context) {
+    private async _function_hinlegen(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
+        try {
+            await executeConetext.character?.put()
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
+            )
+        }
+    }
+
+    private async _function_pick(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
         try {
             await executeConetext.character?.pick()
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(
-                new RSRuntimeError(
-                    e,
-                    this._posStart,
-                    this._posEnd,
-                    executeConetext
-                )
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
         }
     }
 
-    private async _function_mark(executeConetext: Context) {
+    private async _function_aufheben(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
+        try {
+            await executeConetext.character?.pick()
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
+            )
+        }
+    }
+
+    private async _function_mark(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
         try {
             await executeConetext.character?.mark()
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(
-                new RSRuntimeError(
-                    e,
-                    this._posStart,
-                    this._posEnd,
-                    executeConetext
-                )
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
         }
     }
 
-    private async _function_removeMark(executeConetext: Context) {
+    private async _function_markieren(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
+        try {
+            await executeConetext.character?.mark()
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
+            )
+        }
+    }
+
+    private async _function_removeMark(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
         try {
             await executeConetext.character?.removeMark()
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(
-                new RSRuntimeError(
-                    e,
-                    this._posStart,
-                    this._posEnd,
-                    executeConetext
-                )
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
         }
     }
 
-    private async _function_isWall(executeConetext: Context) {
+    private async _function_markierungLöschen(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
+        try {
+            await executeConetext.character?.removeMark()
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
+            )
+        }
+    }
+
+    private async _function_isWall(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
         try {
             if (!executeConetext.character) throw ''
             if (
-                await executeConetext.world?.isWall(
+                executeConetext.world?.isWall(
                     executeConetext.character.direction,
                     executeConetext.character.position
                 )
@@ -1074,6 +1207,87 @@ class RSBuildInFunction extends RSBaseFunction {
                 return new RTResult().success(RSNumber.true)
             }
             return new RTResult().success(RSNumber.false)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(
+                    e,
+                    this._posStart,
+                    this._posEnd,
+                    executeConetext
+                )
+            )
+        }
+    }
+
+    private async _function_notIsWall(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
+        try {
+            if (!executeConetext.character) throw ''
+            if (
+                executeConetext.world?.isWall(
+                    executeConetext.character.direction,
+                    executeConetext.character.position
+                )
+            ) {
+                return new RTResult().success(RSNumber.false)
+            }
+            return new RTResult().success(RSNumber.true)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(
+                    e,
+                    this._posStart,
+                    this._posEnd,
+                    executeConetext
+                )
+            )
+        }
+    }
+
+    private async _function_istWand(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
+        try {
+            if (!executeConetext.character) throw ''
+            if (
+                executeConetext.world?.isWall(
+                    executeConetext.character.direction,
+                    executeConetext.character.position
+                )
+            ) {
+                return new RTResult().success(RSNumber.true)
+            }
+            return new RTResult().success(RSNumber.false)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(
+                    e,
+                    this._posStart,
+                    this._posEnd,
+                    executeConetext
+                )
+            )
+        }
+    }
+
+    private async _function_nichtIstWand(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
+        try {
+            if (!executeConetext.character) throw ''
+            if (
+                executeConetext.world?.isWall(
+                    executeConetext.character.direction,
+                    executeConetext.character.position
+                )
+            ) {
+                return new RTResult().success(RSNumber.false)
+            }
+            return new RTResult().success(RSNumber.true)
         } catch (e) {
             return new RTResult().fail(
                 new RSRuntimeError(
