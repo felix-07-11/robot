@@ -618,7 +618,7 @@ export default Vue.extend({
             // Charakter
             this.character = await Character.createLegoCharacter(this.world)
 
-            this.scene.add(this.world.Mesh, this.character.Mesh)
+            this.scene.add(this.world.Mesh, this.character.mesh)
 
             // Camera
             this.camera.aspect =

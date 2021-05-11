@@ -47,14 +47,84 @@ export class RSRuntimeError extends RSError {
 //#region Interpreter
 
 export class Interpreter {
-    constructor(private _character: Character, private _world: World) {}
+    private context: Context
+
+    constructor(private _character: Character, private _world: World) {
+        const context = new Context({
+            world: this._world,
+            character: this._character,
+            displayName: '<programm>',
+            symboltable: new SymbolTable(),
+        })
+        context.symboltable?.setVar('null', new RSNumber(0, context))
+        context.symboltable?.setVar('wahr', new RSNumber(1, context))
+        context.symboltable?.setVar('falsch', new RSNumber(0, context))
+        context.symboltable?.setVar(
+            'schritt',
+            new RSBuildInFunction('step', context)
+        )
+        context.symboltable?.setVar(
+            'step',
+            new RSBuildInFunction('step', context)
+        )
+        context.symboltable?.setVar(
+            'linksdrehen',
+            new RSBuildInFunction('turnleft', context)
+        )
+        context.symboltable?.setVar(
+            'turnleft',
+            new RSBuildInFunction('turnleft', context)
+        )
+        context.symboltable?.setVar(
+            'rechtsdrehen',
+            new RSBuildInFunction('turnright', context)
+        )
+        context.symboltable?.setVar(
+            'turnright',
+            new RSBuildInFunction('turnright', context)
+        )
+        context.symboltable?.setVar(
+            'hinlegen',
+            new RSBuildInFunction('put', context)
+        )
+        context.symboltable?.setVar(
+            'put',
+            new RSBuildInFunction('put', context)
+        )
+        context.symboltable?.setVar(
+            'aufheben',
+            new RSBuildInFunction('pick', context)
+        )
+        context.symboltable?.setVar(
+            'pick',
+            new RSBuildInFunction('pick', context)
+        )
+        context.symboltable?.setVar(
+            'markieren',
+            new RSBuildInFunction('mark', context)
+        )
+        context.symboltable?.setVar(
+            'mark',
+            new RSBuildInFunction('mark', context)
+        )
+        context.symboltable?.setVar(
+            'markierungLöschen',
+            new RSBuildInFunction('removeMark', context)
+        )
+        context.symboltable?.setVar(
+            'removeMark',
+            new RSBuildInFunction('removeMark', context)
+        )
+
+        this.context = context
+    }
 
     private _run_VarAccessNode(node: Nodes, context: Context) {
         const res = new RTResult()
         const n = node as VarAccessNode
         let value = context.symboltable?.getVar(n.varName.value) as RSNumber
 
-        if (!value)
+        if (!value) {
             return res.fail(
                 new RSRuntimeError(
                     `${n.varName.value} ist nicht definiert.`,
@@ -63,6 +133,7 @@ export class Interpreter {
                     context
                 )
             )
+        }
 
         value = value.copy.setPos(n.posStart, n.posEnd) as RSNumber
         value.context = context
@@ -162,50 +233,42 @@ export class Interpreter {
             const r = left.div(right)
             number = r.number
             error = r.error
-        }
-        // equals
+        } // equals
         else if (op.type === 'ee') {
             const r = left.compareEE(right)
             number = r.number
             error = r.error
-        }
-        // not equals
+        } // not equals
         else if (op.type === 'ne') {
             const r = left.compareNE(right)
             number = r.number
             error = r.error
-        }
-        // less than
+        } // less than
         else if (op.type === 'lt') {
             const r = left.compareLT(right)
             number = r.number
             error = r.error
-        }
-        // less than equals
+        } // less than equals
         else if (op.type === 'lte') {
             const r = left.compareLTE(right)
             number = r.number
             error = r.error
-        }
-        // greater than
+        } // greater than
         else if (op.type === 'gt') {
             const r = left.compareGT(right)
             number = r.number
             error = r.error
-        }
-        // greater than equals
+        } // greater than equals
         else if (op.type === 'gte') {
             const r = left.compareGTE(right)
             number = r.number
             error = r.error
-        }
-        // logical and
+        } // logical and
         else if (op.matches('keyword', 'und')) {
             const r = left.and(right)
             number = r.number
             error = r.error
-        }
-        // logical or
+        } // logical or
         else if (op.matches('keyword', 'oder')) {
             const r = left.or(right)
             number = r.number
@@ -213,13 +276,14 @@ export class Interpreter {
         }
 
         if (error) return res.fail(error)
-        else
+        else {
             return res.success(
                 (number as RSNumber).setPos(
                     node.posStart,
                     node.posEnd
                 ) as RSNumber
             )
+        }
     }
 
     private _run_UnaryOperationNode(node: Nodes, context: Context) {
@@ -229,7 +293,7 @@ export class Interpreter {
         )
         if (res.error) return res
 
-        if ((<UnaryOperationNode>node).operationToken.type === 'minus')
+        if ((<UnaryOperationNode>node).operationToken.type === 'minus') {
             return res.success(
                 (number.mul(new RSNumber(-1, context))
                     .number as RSNumber).setPos(
@@ -237,6 +301,7 @@ export class Interpreter {
                     node.posEnd
                 ) as RSNumber
             )
+        }
         return res.success(
             (number.mul(new RSNumber(1, context)).number as RSNumber).setPos(
                 node.posStart,
@@ -318,71 +383,7 @@ export class Interpreter {
         const func_name = `_run_${node.constructor.name}`
 
         if (!context) {
-            context = new Context({
-                world: this._world,
-                character: this._character,
-                displayName: '<programm>',
-                symboltable: new SymbolTable(),
-            })
-            context.symboltable?.setVar('null', new RSNumber(0, context))
-            context.symboltable?.setVar('wahr', new RSNumber(1, context))
-            context.symboltable?.setVar('falsch', new RSNumber(0, context))
-            context.symboltable?.setVar(
-                'schritt',
-                new RSBuildInFunction('step', context)
-            )
-            context.symboltable?.setVar(
-                'step',
-                new RSBuildInFunction('step', context)
-            )
-            context.symboltable?.setVar(
-                'linksdrehen',
-                new RSBuildInFunction('turnleft', context)
-            )
-            context.symboltable?.setVar(
-                'turnleft',
-                new RSBuildInFunction('turnleft', context)
-            )
-            context.symboltable?.setVar(
-                'rechtsdrehen',
-                new RSBuildInFunction('turnright', context)
-            )
-            context.symboltable?.setVar(
-                'turnright',
-                new RSBuildInFunction('turnright', context)
-            )
-            context.symboltable?.setVar(
-                'hinlegen',
-                new RSBuildInFunction('put', context)
-            )
-            context.symboltable?.setVar(
-                'put',
-                new RSBuildInFunction('put', context)
-            )
-            context.symboltable?.setVar(
-                'aufheben',
-                new RSBuildInFunction('pick', context)
-            )
-            context.symboltable?.setVar(
-                'pick',
-                new RSBuildInFunction('pick', context)
-            )
-            context.symboltable?.setVar(
-                'markieren',
-                new RSBuildInFunction('mark', context)
-            )
-            context.symboltable?.setVar(
-                'mark',
-                new RSBuildInFunction('mark', context)
-            )
-            context.symboltable?.setVar(
-                'markierungLöschen',
-                new RSBuildInFunction('removeMark', context)
-            )
-            context.symboltable?.setVar(
-                'removeMark',
-                new RSBuildInFunction('removeMark', context)
-            )
+            context = this.context
         }
 
         if (func_name in this) return (this as any)[func_name](node, context)
@@ -483,8 +484,9 @@ class SymbolTable {
     }
 
     getVar(name: string): Value | undefined {
-        if (!(name in this._symbols) && this._parent)
+        if (!(name in this._symbols) && this._parent) {
             return this._parent.getVar(name)
+        }
         if (!(name in this._symbols)) return
         return this._symbols[name]
     }
@@ -634,6 +636,14 @@ class RSNumber extends Value {
         return new RSNumber(0, new Context({ displayName: '<number null>' }))
     }
 
+    static get true() {
+        return new RSNumber(1, new Context({ displayName: '<boolean true>' }))
+    }
+
+    static get false() {
+        return new RSNumber(0, new Context({ displayName: '<boolean false>' }))
+    }
+
     get copy(): Value {
         const copy = new RSNumber(
             this.value,
@@ -657,7 +667,7 @@ class RSNumber extends Value {
     }
 
     div(other: RSNumber): RetrunValue {
-        if (other.value == 0)
+        if (other.value == 0) {
             return {
                 number: undefined,
                 error: new RSRuntimeError(
@@ -667,6 +677,7 @@ class RSNumber extends Value {
                     this.context
                 ),
             }
+        }
         return { number: new RSNumber(this.value / other.value, this.context) }
     }
 
@@ -775,7 +786,7 @@ class RSBaseFunction extends Value {
     checkArgs(argsNames: string[], args: any[]) {
         const res = new RTResult()
 
-        if (args.length < argsNames.length)
+        if (args.length < argsNames.length) {
             return res.fail(
                 new RSRuntimeError(
                     `Zu wenige Argumente an Funktion übergeben. Erwartet: ${argsNames.length}; Übergeben: ${args.length}`,
@@ -784,6 +795,7 @@ class RSBaseFunction extends Value {
                     this.context
                 )
             )
+        }
 
         return res.success()
     }
@@ -866,7 +878,7 @@ class RSFunction extends RSBaseFunction {
             symboltable: this.context.symboltable,
         })
 
-        if (args.length < this._args.length)
+        if (args.length < this._args.length) {
             return res.fail(
                 new RSRuntimeError(
                     `Zu wenige Argumente an Funktion übergeben. Erwartet: ${this._args.length}; Übergeben: ${args.length}`,
@@ -875,6 +887,7 @@ class RSFunction extends RSBaseFunction {
                     this.context
                 )
             )
+        }
 
         for (let i = 0; i < args.length; i++) {
             if (this._args[i] === undefined) break
@@ -937,9 +950,9 @@ class RSBuildInFunction extends RSBaseFunction {
         throw `No function '${this._name}' definded!`
     }
 
-    private _function_step(executeConetext: Context) {
+    private async _function_step(executeConetext: Context) {
         try {
-            executeConetext.character?.step(1)
+            await executeConetext.character?.step(1)
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(
@@ -953,9 +966,9 @@ class RSBuildInFunction extends RSBaseFunction {
         }
     }
 
-    private _function_turnleft(executeConetext: Context) {
+    private async _function_turnleft(executeConetext: Context) {
         try {
-            executeConetext.character?.turn_left()
+            await executeConetext.character?.turn_left()
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(
@@ -969,9 +982,9 @@ class RSBuildInFunction extends RSBaseFunction {
         }
     }
 
-    private _function_turnright(executeConetext: Context) {
+    private async _function_turnright(executeConetext: Context) {
         try {
-            executeConetext.character?.turn_right()
+            await executeConetext.character?.turn_right()
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(
@@ -985,9 +998,9 @@ class RSBuildInFunction extends RSBaseFunction {
         }
     }
 
-    private _function_put(executeConetext: Context) {
+    private async _function_put(executeConetext: Context) {
         try {
-            executeConetext.character?.put()
+            await executeConetext.character?.put()
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(
@@ -1001,9 +1014,9 @@ class RSBuildInFunction extends RSBaseFunction {
         }
     }
 
-    private _function_pick(executeConetext: Context) {
+    private async _function_pick(executeConetext: Context) {
         try {
-            executeConetext.character?.pick()
+            await executeConetext.character?.pick()
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(
@@ -1017,9 +1030,9 @@ class RSBuildInFunction extends RSBaseFunction {
         }
     }
 
-    private _function_mark(executeConetext: Context) {
+    private async _function_mark(executeConetext: Context) {
         try {
-            executeConetext.character?.mark()
+            await executeConetext.character?.mark()
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(
@@ -1033,10 +1046,34 @@ class RSBuildInFunction extends RSBaseFunction {
         }
     }
 
-    private _function_removeMark(executeConetext: Context) {
+    private async _function_removeMark(executeConetext: Context) {
         try {
-            executeConetext.character?.removeMark()
+            await executeConetext.character?.removeMark()
             return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(
+                    e,
+                    this._posStart,
+                    this._posEnd,
+                    executeConetext
+                )
+            )
+        }
+    }
+
+    private async _function_isWall(executeConetext: Context) {
+        try {
+            if (!executeConetext.character) throw ''
+            if (
+                await executeConetext.world?.isWall(
+                    executeConetext.character.direction,
+                    executeConetext.character.position
+                )
+            ) {
+                return new RTResult().success(RSNumber.true)
+            }
+            return new RTResult().success(RSNumber.false)
         } catch (e) {
             return new RTResult().fail(
                 new RSRuntimeError(

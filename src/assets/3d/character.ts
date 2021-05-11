@@ -5,6 +5,12 @@ import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import legoFigure from '@/assets/3d/models/characters/lego_minifigure.fbx'
 import { DoubleSide, Mesh, MeshBasicMaterial, MeshPhongMaterial } from 'three'
 
+async function wait(ms: number) {
+    return new Promise((resolve) => {
+        setTimeout(() => resolve(null), ms)
+    })
+}
+
 export class Character {
     private rotation: { x: number; y: number; z: number }
 
@@ -12,66 +18,78 @@ export class Character {
     // constructor
 
     constructor(
-        private mesh: THREE.Group | THREE.Mesh,
-        private world: World,
-        private readonly positionOffset: { x: number; y: number; z: number } = {
+        private _mesh: THREE.Group | THREE.Mesh,
+        private _world: World,
+        private readonly _positionOffset: {
+            x: number
+            y: number
+            z: number
+        } = {
             x: 0,
             y: 0,
             z: 0,
         },
-        private readonly rotationOffset: { x: number; y: number; z: number } = {
+        private readonly _rotationOffset: {
+            x: number
+            y: number
+            z: number
+        } = {
             x: 0,
             y: 0,
             z: 0,
         },
-        private readonly scale: { x: number; y: number; z: number } = {
+        private readonly _scale: { x: number; y: number; z: number } = {
             x: 1,
             y: 1,
             z: 1,
         },
-        private position: { x: number; y: number; z: number } = {
+        private _position: { x: number; y: number; z: number } = {
             x: 0,
             y: 0,
             z: 0,
         },
-        private direction: 'x' | '-x' | 'z' | '-z' = 'z',
-        private height: number = 0
+        private _direction: 'x' | '-x' | 'z' | '-z' = 'z',
+        private _height: number = 0
     ) {
-        mesh.position.set(
-            positionOffset.x + position.x,
-            positionOffset.y + position.y,
-            positionOffset.z + position.z
+        this._mesh.position.set(
+            this._positionOffset.x + this._position.x,
+            this._positionOffset.y + this._position.y,
+            this._positionOffset.z + this._position.z
         )
-        mesh.scale.set(scale.x, scale.y, scale.z)
-        mesh.rotation.set(rotationOffset.x, rotationOffset.y, rotationOffset.z)
+        this._mesh.scale.set(_scale.x, _scale.y, _scale.z)
+        this._mesh.rotation.set(
+            _rotationOffset.x,
+            _rotationOffset.y,
+            _rotationOffset.z
+        )
         this.rotation = {
-            x: this.rotationOffset.x,
-            y: this.rotationOffset.y,
-            z: this.rotationOffset.z,
+            x: this._rotationOffset.x,
+            y: this._rotationOffset.y,
+            z: this._rotationOffset.z,
         }
     }
 
     // ########################################################################################################
     // getter
 
-    get Position() {
-        return this.position
+    get position() {
+        return this._position
     }
 
-    get PositionInFrontOf() {
-        return this.position
+    get positionInFrontOf() {
+        return this._position
     }
 
-    get Mesh() {
-        return this.mesh
+    get mesh() {
+        return this._mesh
     }
 
-    get Direction() {
-        return this.direction
+    get direction() {
+        return this._direction
     }
 
-    get Height() {
-        return this.height
+    get height() {
+        return this._height
     }
 
     toString() {
@@ -81,8 +99,8 @@ export class Character {
     // ########################################################################################################
     // setter
 
-    set World(value: World) {
-        this.world = value
+    set world(value: World) {
+        this._world = value
     }
 
     // ########################################################################################################
@@ -92,93 +110,97 @@ export class Character {
      * move the character to the resetposition of the World
      */
     async reset() {
-        this.position = {
-            x: this.world.ResetPosition.x,
+        this._position = {
+            x: this._world.ResetPosition.x,
             y:
-                this.world.heightOfPosition(
-                    this.world.ResetPosition.x,
-                    this.world.ResetPosition.x
+                this._world.heightOfPosition(
+                    this._world.ResetPosition.x,
+                    this._world.ResetPosition.x
                 ).current / 2,
-            z: this.world.ResetPosition.x,
+            z: this._world.ResetPosition.x,
         }
         this.rotation = {
-            x: this.rotationOffset.x,
-            y: this.rotationOffset.y,
-            z: this.rotationOffset.z,
+            x: this._rotationOffset.x,
+            y: this._rotationOffset.y,
+            z: this._rotationOffset.z,
         }
 
-        this.mesh.position.set(
-            this.positionOffset.x + this.position.x,
-            this.positionOffset.y + this.position.y,
-            this.positionOffset.z + this.position.z
+        this._mesh.position.set(
+            this._positionOffset.x + this._position.x,
+            this._positionOffset.y + this._position.y,
+            this._positionOffset.z + this._position.z
         )
-        this.mesh.rotation.set(
-            this.rotationOffset.x,
-            this.rotationOffset.y,
-            this.rotationOffset.z
+        this._mesh.rotation.set(
+            this._rotationOffset.x,
+            this._rotationOffset.y,
+            this._rotationOffset.z
         )
 
-        this.direction = 'z'
+        this._direction = 'z'
     }
 
-    step(n: number, d: 'x' | '-x' | 'z' | '-z' = this.direction) {
-        const old = JSON.parse(JSON.stringify(this.position))
+    async step(n: number, d: 'x' | '-x' | 'z' | '-z' = this._direction) {
+        await wait(Number(localStorage.getItem('wait') || 500))
+
+        const old = JSON.parse(JSON.stringify(this._position))
 
         if (d === 'x') {
-            this.position.x += n
+            this._position.x += n
         } else if (d === '-x') {
-            this.position.x -= n
+            this._position.x -= n
         } else if (d === 'z') {
-            this.position.z += n
+            this._position.z += n
         } else if (d === '-z') {
-            this.position.z -= n
+            this._position.z -= n
         }
 
-        const newpos = this.position
+        const newpos = this._position
         const ch =
-            this.world.heightOfPosition(this.position.x, this.position.z)
+            this._world.heightOfPosition(this._position.x, this._position.z)
                 .current / 2
 
-        if (ch == this.position.y + 0.5) this.position.y += 0.5
-        else if (ch == this.position.y - 0.5) this.position.y -= 0.5
-        else if (ch < this.position.y - 0.5 || ch > this.position.y + 0.5) {
-            this.position = old
+        if (ch == this._position.y + 0.5) this._position.y += 0.5
+        else if (ch == this._position.y - 0.5) this._position.y -= 0.5
+        else if (ch < this._position.y - 0.5 || ch > this._position.y + 0.5) {
+            this._position = old
             throw `Character kann nicht von (${old.x}|${old.y * 2}|${
                 old.z
             }) nach (${newpos.x}|${
-                this.world.heightOfPosition(newpos.x, newpos.z).current
+                this._world.heightOfPosition(newpos.x, newpos.z).current
             }|${newpos.z}) laufen: Höhenunterschied zu groß!`
         }
 
-        if (!this.world.isInWorld(this.position.x, this.position.z)) {
-            this.position = old
+        if (!this._world.isInWorld(this._position.x, this._position.z)) {
+            this._position = old
             throw `Character kann nicht von (${old.x}|${old.y * 2}|${
                 old.z
             }) nach (${newpos.x}|${
-                this.world.heightOfPosition(newpos.x, newpos.z).current
+                this._world.heightOfPosition(newpos.x, newpos.z).current
             }|${newpos.z}) laufen: Welt zu klein!`
         }
 
-        this.mesh.position.set(
-            this.positionOffset.x + this.position.x,
-            this.positionOffset.y + this.position.y,
-            this.positionOffset.z + this.position.z
+        this._mesh.position.set(
+            this._positionOffset.x + this._position.x,
+            this._positionOffset.y + this._position.y,
+            this._positionOffset.z + this._position.z
         )
     }
 
-    turn_right(): void
-    turn_right(d: 'x' | '-x' | 'z' | '-z'): void
-    turn_right(d?: 'x' | '-x' | 'z' | '-z'): void {
+    async turn_right(): Promise<void>
+    async turn_right(d: 'x' | '-x' | 'z' | '-z'): Promise<void>
+    async turn_right(d?: 'x' | '-x' | 'z' | '-z'): Promise<void> {
+        await wait(Number(localStorage.getItem('wait') || 500))
+
         if (d === undefined) {
             this.rotation.z = (this.rotation.z - Math.PI / 2) % (Math.PI * 2)
-            this.mesh.rotation.set(
+            this._mesh.rotation.set(
                 this.rotation.x,
                 this.rotation.y,
                 this.rotation.z
             )
         } else {
             this.rotation.z =
-                (this.rotationOffset.z -
+                (this._rotationOffset.z -
                     (d === '-x'
                         ? Math.PI / 2
                         : d === '-z'
@@ -187,36 +209,38 @@ export class Character {
                         ? (Math.PI / 2) * 3
                         : 0)) %
                 (Math.PI * 2)
-            this.mesh.rotation.set(
-                this.rotationOffset.x,
-                this.rotationOffset.y,
+            this._mesh.rotation.set(
+                this._rotationOffset.x,
+                this._rotationOffset.y,
                 this.rotation.z
             )
         }
 
         const rot = Math.abs(
-            (this.mesh.rotation.z + this.rotationOffset.z) % (Math.PI * 2)
+            (this._mesh.rotation.z + this._rotationOffset.z) % (Math.PI * 2)
         )
-        if (rot == 0) this.direction = 'z'
-        else if (rot == Math.PI / 2) this.direction = '-x'
-        else if (rot == Math.PI) this.direction = '-z'
-        else if (rot == (Math.PI / 2) * 3) this.direction = 'x'
+        if (rot == 0) this._direction = 'z'
+        else if (rot == Math.PI / 2) this._direction = '-x'
+        else if (rot == Math.PI) this._direction = '-z'
+        else if (rot == (Math.PI / 2) * 3) this._direction = 'x'
     }
 
-    turn_left(): void
-    turn_left(d: 'x' | '-x' | 'z' | '-z'): void
-    turn_left(d?: 'x' | '-x' | 'z' | '-z'): void {
+    async turn_left(): Promise<void>
+    async turn_left(d: 'x' | '-x' | 'z' | '-z'): Promise<void>
+    async turn_left(d?: 'x' | '-x' | 'z' | '-z'): Promise<void> {
+        await wait(Number(localStorage.getItem('wait') || 500))
+
         if (d === undefined) {
             this.rotation.z =
                 (this.rotation.z - (Math.PI / 2) * 3) % (Math.PI * 2)
-            this.mesh.rotation.set(
+            this._mesh.rotation.set(
                 this.rotation.x,
                 this.rotation.y,
                 this.rotation.z
             )
         } else {
             this.rotation.z =
-                (this.rotationOffset.z +
+                (this._rotationOffset.z +
                     (d === '-x'
                         ? Math.PI / 2
                         : d === '-z'
@@ -225,20 +249,20 @@ export class Character {
                         ? (Math.PI / 2) * 3
                         : 0)) %
                 (Math.PI * 2)
-            this.mesh.rotation.set(
-                this.rotationOffset.x,
-                this.rotationOffset.y,
+            this._mesh.rotation.set(
+                this._rotationOffset.x,
+                this._rotationOffset.y,
                 this.rotation.z
             )
         }
 
         const rot = Math.abs(
-            (this.mesh.rotation.z + this.rotationOffset.z) % (Math.PI * 2)
+            (this._mesh.rotation.z + this._rotationOffset.z) % (Math.PI * 2)
         )
-        if (rot == 0) this.direction = 'z'
-        else if (rot == Math.PI / 2) this.direction = '-x'
-        else if (rot == Math.PI) this.direction = '-z'
-        else if (rot == (Math.PI / 2) * 3) this.direction = 'x'
+        if (rot == 0) this._direction = 'z'
+        else if (rot == Math.PI / 2) this._direction = '-x'
+        else if (rot == Math.PI) this._direction = '-z'
+        else if (rot == (Math.PI / 2) * 3) this._direction = 'x'
     }
 
     async put(): Promise<void>
@@ -248,55 +272,63 @@ export class Character {
     async put(
         color: 'orange' | 'blue' | 'green' | 'pink' | 'red' | 'purple' = 'blue'
     ): Promise<void> {
+        await wait(Number(localStorage.getItem('wait') || 500))
+
         const pos: { x: number; y: number; z: number } = JSON.parse(
-            JSON.stringify(this.position)
+            JSON.stringify(this._position)
         )
 
-        if (this.direction === 'x') {
+        if (this._direction === 'x') {
             pos.x += 1
-        } else if (this.direction === '-x') {
+        } else if (this._direction === '-x') {
             pos.x -= 1
-        } else if (this.direction === 'z') {
+        } else if (this._direction === 'z') {
             pos.z += 1
-        } else if (this.direction === '-z') {
+        } else if (this._direction === '-z') {
             pos.z -= 1
         }
 
-        await this.world.addBox(pos.x, pos.z, color)
+        await this._world.addBox(pos.x, pos.z, color)
     }
 
     async pick() {
+        await wait(Number(localStorage.getItem('wait') || 500))
+
         const pos: { x: number; y: number; z: number } = JSON.parse(
-            JSON.stringify(this.position)
+            JSON.stringify(this._position)
         )
 
-        if (this.direction === 'x') {
+        if (this._direction === 'x') {
             pos.x += 1
-        } else if (this.direction === '-x') {
+        } else if (this._direction === '-x') {
             pos.x -= 1
-        } else if (this.direction === 'z') {
+        } else if (this._direction === 'z') {
             pos.z += 1
-        } else if (this.direction === '-z') {
+        } else if (this._direction === '-z') {
             pos.z -= 1
         }
 
-        await this.world.removeBox(pos.x, pos.z)
+        await this._world.removeBox(pos.x, pos.z)
     }
 
     async mark() {
+        await wait(Number(localStorage.getItem('wait') || 500))
+
         const pos: { x: number; y: number; z: number } = JSON.parse(
-            JSON.stringify(this.position)
+            JSON.stringify(this._position)
         )
 
-        await this.world.addMark(pos.x, pos.z)
+        await this._world.addMark(pos.x, pos.z)
     }
 
     async removeMark() {
+        await wait(Number(localStorage.getItem('wait') || 500))
+
         const pos: { x: number; y: number; z: number } = JSON.parse(
-            JSON.stringify(this.position)
+            JSON.stringify(this._position)
         )
 
-        await this.world.removeMark(pos.x, pos.z)
+        await this._world.removeMark(pos.x, pos.z)
     }
 
     // ########################################################################################################
@@ -304,11 +336,11 @@ export class Character {
 
     /**
      * Creates a 'lego' Character
-     * @param world
+     * @param _world
      * @returns a Charakter
      */
-    static async createLegoCharacter(world: World) {
-        const mesh = await new Promise((resolve) => {
+    static async createLegoCharacter(_world: World) {
+        const _mesh = await new Promise((resolve) => {
             new FBXLoader().load(legoFigure, (fbx) => {
                 fbx.scale.set(0.005, 0.005, 0.005)
                 fbx.rotateX(Math.PI / 2)
@@ -316,7 +348,7 @@ export class Character {
             })
         })
 
-        const m = mesh as THREE.Group
+        const m = _mesh as THREE.Group
 
         m.traverse((model) => {
             if ((model as Mesh).isMesh)
@@ -328,8 +360,8 @@ export class Character {
         })
 
         return new Character(
-            mesh as THREE.Mesh,
-            world,
+            _mesh as THREE.Mesh,
+            _world,
             { x: 1, y: 0.58, z: 1 },
             { x: -Math.PI / 2, y: 0, z: 0 },
             { x: 0.002, y: 0.002, z: 0.002 }
@@ -338,10 +370,10 @@ export class Character {
 
     /**
      * Creates a 'cone' Character
-     * @param world
+     * @param _world
      * @returns a Charakter
      */
-    static async createDefaultCharacter(world: World) {
+    static async createDefaultCharacter(_world: World) {
         return new Character(
             new THREE.Mesh(
                 new THREE.ConeGeometry(0.2, 0.7, 6),
@@ -350,7 +382,7 @@ export class Character {
                     side: THREE.DoubleSide,
                 })
             ),
-            world,
+            _world,
             { x: 1, y: 0.3, z: 1 },
             { x: -Math.PI / 2, y: 0, z: -Math.PI },
             { x: 1, y: 1, z: 1 }
