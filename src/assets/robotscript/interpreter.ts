@@ -10,6 +10,7 @@ import {
     FunctionCallNode,
     FunctionDefineNode,
     IfNode,
+    ListNode,
     Nodes,
     NumberNode,
     Position,
@@ -56,7 +57,7 @@ export class Interpreter {
             displayName: '<programm>',
             symboltable: new SymbolTable(),
         })
-        context.symboltable?.setVar('null',  RSNumber.null)
+        context.symboltable?.setVar('null', RSNumber.null)
 
         context.symboltable?.setVar('wahr', RSNumber.true)
         context.symboltable?.setVar('true', RSNumber.true)
@@ -95,6 +96,11 @@ export class Interpreter {
             'hinlegen',
             new RSBuildInFunction('hinlegen', context)
         )
+        context.symboltable?.setVar(
+            'farbigHinlegen',
+            new RSBuildInFunction('farbigHinlegen', context)
+        )
+
         context.symboltable?.setVar(
             'put',
             new RSBuildInFunction('put', context)
@@ -144,7 +150,7 @@ export class Interpreter {
             'nichtIstWand',
             new RSBuildInFunction('nichtIstWand', context)
         )
-        
+
         this.context = context
     }
 
@@ -173,7 +179,7 @@ export class Interpreter {
         const res = new RTResult()
         const n = node as VarAssignNode
 
-        const value = res.register(await this.run(n.node, context))
+        const value = res.register(await this.run(n.node, context)) as Value
 
         if (res.error) return res
 
@@ -211,7 +217,7 @@ export class Interpreter {
         const n = node as FunctionCallNode
 
         const args = []
-        let toCall = res.register(await this.run(n.callName, context))
+        let toCall = res.register(await this.run(n.callName, context)) as Value
         if (res.error) return res
 
         toCall = toCall.copy.setPos(node.posStart, node.posEnd)
@@ -221,12 +227,29 @@ export class Interpreter {
             if (res.error) return res
         }
 
-        let rv = res.register(await toCall.execute(args))
+        let rv = res.register(await toCall.execute(args)) as Value
+
         if (res.error) return res
 
-        rv = rv.copy.setPos(n.posStart, n.posEnd)
-        rv.context = context
+        if (rv) {
+            rv = rv.copy.setPos(n.posStart, n.posEnd)
+            rv.context = context
+        }
         return res.success(rv)
+    }
+
+    // -----------------------------------------------------
+
+    private async _run_ListNode(node: Nodes, context: Context) {
+        const res = new RTResult()
+        const n = node as ListNode
+
+        for (const activeNode of n.list) {
+            res.register(await this.run(activeNode, context))
+            if (res.error) return res
+        }
+
+        return res.success()
     }
 
     // -----------------------------------------------------
@@ -246,7 +269,7 @@ export class Interpreter {
         const res = new RTResult()
         const left = res.register(
             await this.run((<BinaryOperationNode>node).leftNode, context)
-        )
+        ) as RSNumber
         const right = res.register(
             await this.run((<BinaryOperationNode>node).rightNode, context)
         ) as RSNumber
@@ -319,7 +342,7 @@ export class Interpreter {
         const res = new RTResult()
         const number = res.register(
             await this.run((<UnaryOperationNode>node).node, context)
-        )
+        ) as Value
         if (res.error) return res
 
         if ((<UnaryOperationNode>node).operationToken.type === 'minus') {
@@ -350,9 +373,9 @@ export class Interpreter {
 
         if (res.error) return res
 
-        if (con.isTrue()) {
+        if (con && con.isTrue()) {
             const ex = res.register(
-                await this.run(n.caseIf.expression, context)
+                await this.run(n.caseIf.statements, context)
             )
             if (res.error) return res
 
@@ -388,6 +411,8 @@ export class Interpreter {
 
             i += step.value
         }
+
+        return res.success()
     }
 
     private async _run_WhileNode(node: Nodes, context: Context) {
@@ -399,11 +424,13 @@ export class Interpreter {
             const con = res.register(await this.run(n.condition, context))
             if (res.error) return res
 
-            if (!con.isTrue()) break
+            if (con && !con.isTrue()) break
 
             res.register(await this.run(n.body, context))
             if (res.error) return res
         }
+
+        return res.success()
     }
 
     // -----------------------------------------------------
@@ -428,7 +455,7 @@ export class Interpreter {
 //#region Runtime Result
 
 export class RTResult {
-    private _value!: Value
+    private _value?: Value
     private _error!: RSRuntimeError
 
     constructor() {}
@@ -567,8 +594,6 @@ class Value {
     }
 
     get copy(): Value {
-        console.log(this.constructor.name)
-
         throw 'No copy function defined'
     }
 
@@ -945,6 +970,7 @@ class RSBuildInFunction extends RSBaseFunction {
         function_linksdrehen: [],
         function_put: [],
         function_hinlegen: [],
+        function_farbigHinlegen: ['color'],
         function_pick: [],
         function_aufheben: [],
         function_mark: [],
@@ -1100,6 +1126,52 @@ class RSBuildInFunction extends RSBaseFunction {
     ) {
         try {
             await executeConetext.character?.put()
+            return new RTResult().success(RSNumber.null)
+        } catch (e) {
+            return new RTResult().fail(
+                new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
+            )
+        }
+    }
+
+    private async _function_farbigHinlegen(
+        bif: RSBuildInFunction,
+        executeConetext: Context
+    ) {
+        try {
+            let color: 'orange' | 'blue' | 'green' | 'pink' | 'red' | 'purple'
+            switch (
+                Number(
+                    (executeConetext.symboltable?.getVar('color') as RSNumber)
+                        .value
+                )
+            ) {
+                case 1: {
+                    color = 'orange'
+                    break
+                }
+                case 2: {
+                    color = 'green'
+                    break
+                }
+                case 3: {
+                    color = 'pink'
+                    break
+                }
+                case 4: {
+                    color = 'red'
+                    break
+                }
+                case 5: {
+                    color = 'purple'
+                    break
+                }
+                default: {
+                    color = 'blue'
+                    break
+                }
+            }
+            await executeConetext.character?.put(color)
             return new RTResult().success(RSNumber.null)
         } catch (e) {
             return new RTResult().fail(

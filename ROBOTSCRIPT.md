@@ -121,6 +121,8 @@ falsch != 0 -> falsch
 
 ### Regeln
 ```
+statements: newline* expr (newline+ expr)* newline*
+
 expr:
     (Keyword:var | Keyword:variable) identifier eq expr
     comp-expr ((Keyword:und | Keyword:oder) comp-expr)*
@@ -151,14 +153,14 @@ atom:
     function-def
 
 if-expr:
-    keyword:wenn expr co expr (keyword:sonst expr)? as+keyword:wenn
+    keyword:wenn expr co expr|statements (keyword:sonst statements)? as+keyword:wenn
 
 for-expr:
-    keyword:wiederhole expr co expr as+keyword:wiederhole
+    keyword:wiederhole expr co expr|statements as+keyword:wiederhole
 
 while-expr:
-    keyword:wiederhole_solange expr co expr as+keyword:wiederhole_solange
+    keyword:wiederhole_solange expr co expr|statements as+keyword:wiederhole_solange
 
 function-def:
-    keyword:funktion (lparen (identifier (comma identifier)*)? rparen)? co expr as+keyword:funktion
+    keyword:funktion (lparen (identifier (comma identifier)*)? rparen)? co expr|statements as+keyword:funktion
 ```

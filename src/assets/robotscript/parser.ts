@@ -59,6 +59,7 @@ export type tokenType =
     | 'co' // :
     | 'as' // *
     | 'comma' // ,
+    | 'newline' // \n ;
     | 'eof' // end
 
 export const keywords = [
@@ -190,7 +191,10 @@ class Lexer {
 
         while (this._currentChar !== null) {
             if (/[ \t]/.test(this._currentChar)) this.advance()
-            else if (/[0-9]/.test(this._currentChar)) {
+            else if (/[;\n]/.test(this._currentChar)) {
+                tokens.push(new Token({ type: 'newline', posStart: this._pos }))
+                this.advance()
+            } else if (/[0-9]/.test(this._currentChar)) {
                 tokens.push(this._makeNumber())
             } else if (/[A-Za-z_ÄäÖöÜüß]/.test(this._currentChar)) {
                 tokens.push(this._makeIdentifier())
@@ -361,6 +365,7 @@ export type Nodes =
     | IfNode
     | ForNode
     | WhileNode
+    | ListNode
 
 export class NumberNode {
     constructor(private _token: Token) {}
@@ -542,7 +547,7 @@ export class UnaryOperationNode {
 
 export class IfNode {
     constructor(
-        private _caseIf: { condition: Nodes; expression: Nodes },
+        private _caseIf: { condition: Nodes; statements: Nodes },
         private _caseElse?: Nodes | null
     ) {}
 
@@ -561,7 +566,7 @@ export class IfNode {
     get posEnd(): Position {
         return this._caseElse
             ? this._caseElse.posEnd
-            : this._caseIf.expression.posEnd
+            : this._caseIf.statements.posEnd
     }
 }
 
@@ -655,6 +660,14 @@ export class WhileNode {
     }
 }
 
+export class ListNode {
+    constructor(
+        public readonly list: Nodes[],
+        public readonly posStart: Position,
+        public readonly posEnd: Position
+    ) {}
+}
+
 //#endregion
 
 //#region Parse result
@@ -664,8 +677,18 @@ class ParseResult {
     public node: Nodes | null = null
     public lastRegisteredAdvanceCount = 0
     public advanceCount = 0
+    public toReverseCount = 0
+
+    tryRegister(res: ParseResult) {
+        if (res.error) {
+            this.toReverseCount = res.advanceCount
+            return null
+        }
+        return this.register(res)
+    }
 
     register(res: ParseResult | any) {
+        this.lastRegisteredAdvanceCount = this.advanceCount
         this.advanceCount += res.advanceCount
         if (!(res instanceof ParseResult)) return res
         if (res.error) this.error = res.error
@@ -673,6 +696,7 @@ class ParseResult {
     }
 
     registerAdvancement() {
+        this.lastRegisteredAdvanceCount = 1
         this.advanceCount += 1
     }
 
@@ -682,7 +706,8 @@ class ParseResult {
     }
 
     fail(error: RSError) {
-        if (!this.error || this.advanceCount === 0) this.error = error
+        if (!this.error || this.lastRegisteredAdvanceCount === 0)
+            this.error = error
         return this
     }
 }
@@ -695,15 +720,25 @@ class Parser {
     public tokenIndex = -1
     public ct!: Token
 
-    constructor(private _tokens: Token[]) {
+    constructor(public readonly _tokens: Token[]) {
         this.advance()
     }
 
     advance() {
         this.tokenIndex++
-        if (this.tokenIndex < this._tokens.length)
-            this.ct = this._tokens[this.tokenIndex]
+        this.update_ct()
         return this.ct
+    }
+
+    reverse(v = 1) {
+        this.tokenIndex -= v
+        this.update_ct()
+        return this.ct
+    }
+
+    update_ct() {
+        if (this.tokenIndex >= 0 && this.tokenIndex < this._tokens.length)
+            this.ct = this._tokens[this.tokenIndex]
     }
 
     atom(p: Parser) {
@@ -891,9 +926,59 @@ class Parser {
         return res.success(node)
     }
 
+    statements(p: Parser) {
+        const res = new ParseResult()
+
+        const statements: any[] = []
+
+        const posStart = p.ct.posStart.pos
+
+        while (p.ct.type === 'newline') {
+            res.registerAdvancement()
+            p.advance()
+        }
+
+        const s = res.register(p.expression(p))
+        if (res.error) return res
+
+        statements.push(s)
+
+        let moreStatements = true
+        // eslint-disable-next-line
+        while (moreStatements) {
+            let nc = 0
+            // @ts-ignore
+            while (p.ct.type === 'newline') {
+                res.registerAdvancement()
+                p.advance()
+                moreStatements = true
+
+                nc++
+            }
+
+            if (nc == 0) moreStatements = false
+
+            if (!moreStatements) break
+            const s = res.tryRegister(p.expression(p))
+            if (!s) {
+                p.reverse(res.toReverseCount)
+                moreStatements = false
+                continue
+            }
+            // if (s.error) return s
+            // if (res.error) return res
+
+            statements.push(s)
+        }
+
+        return res.success(
+            new ListNode(statements as Nodes[], posStart, p.ct.posEnd.pos)
+        )
+    }
+
     ifExpr(p: Parser) {
         const res = new ParseResult()
-        let caseIf: { condition: Nodes; expression: Nodes }
+        let caseIf: { condition: Nodes; statements: Nodes }
         let caseElse: Nodes | null = null
 
         if (!p.ct.matches('keyword', 'wenn'))
@@ -915,19 +1000,19 @@ class Parser {
         res.registerAdvancement()
         p.advance()
 
-        const expression = res.register(p.expression(p))
+        const statements = res.register(p.statements(p))
         if (res.error) return res
 
-        caseIf = { condition, expression } // eslint-disable-line
+        caseIf = { condition, statements } // eslint-disable-line
 
         if (p.ct.matches('keyword', 'sonst')) {
             res.registerAdvancement()
             p.advance()
 
-            const expression = res.register(p.expression(p))
+            const statements = res.register(p.statements(p))
             if (res.error) return res
 
-            caseElse = expression
+            caseElse = statements
         }
 
         // eslint-disable-next-line
@@ -980,7 +1065,7 @@ class Parser {
         res.registerAdvancement()
         p.advance()
 
-        const body = res.register(p.expression(p))
+        const body = res.register(p.statements(p))
         if (res.error) return res
 
         // eslint-disable-next-line
@@ -1033,10 +1118,9 @@ class Parser {
         res.registerAdvancement()
         p.advance()
 
-        const body = res.register(p.expression(p))
+        const body = res.register(p.statements(p))
         if (res.error) return res
 
-        // eslint-disable-next-line
         // @ts-ignore
         if (p.ct.type !== 'as')
             return res.fail(
@@ -1047,6 +1131,7 @@ class Parser {
                 )
             )
 
+        res.registerAdvancement()
         p.advance()
 
         if (!p.ct.matches('keyword', 'wiederhole'))
@@ -1171,7 +1256,7 @@ class Parser {
         res.registerAdvancement()
         p.advance()
 
-        const body = res.register(p.expression(p))
+        const body = res.register(p.statements(p))
         if (res.error) return res
 
         // @ts-ignore
@@ -1293,7 +1378,7 @@ class Parser {
     }
 
     public parse() {
-        const res = this.expression(this)
+        const res = this.statements(this)
 
         if (!res.error && this.ct.type !== 'eof')
             return res.fail(

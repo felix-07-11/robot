@@ -556,7 +556,7 @@ export default Vue.extend({
 
     methods: {
         //#region Init
-        initCodeMirror() {
+        async initCodeMirror() {
             this.editor = CodeMirror.fromTextArea(
                 document.getElementById('editor') as HTMLTextAreaElement,
                 {
@@ -566,13 +566,15 @@ export default Vue.extend({
                 }
             )
 
-            this.editor.on('change', () => {
+            this.editor.on('change', async () => {
                 store.commit(
                     'SET_ACTIVE_RS_FILE_VALUE',
                     this.editor ? this.editor.getValue() : ''
                 )
 
-                this.parsed = parse(this.editor ? this.editor.getValue() : '')
+                this.parsed = await parse(
+                    this.editor ? this.editor.getValue() : ''
+                )
 
                 if (this.parsed instanceof RSError) {
                     this.log = this.parsed.toString()
