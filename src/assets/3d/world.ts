@@ -129,6 +129,12 @@ export class World {
         const pj = JSON.parse(json)
         this.size = pj.size
         this.resetPosition = pj.resetPosition
+
+        // !
+        this.boxes = pj.boxes
+        this.marked = pj.marked
+        // !
+
         this.mesh = createWorld(
             this.TextureFloor,
             this.TextureWall,
@@ -140,7 +146,7 @@ export class World {
         return this
     }
 
-    async createNewWorld({
+    static createNewWorld({
         w = 5,
         h = 5,
         d = 8,
@@ -163,9 +169,10 @@ export class World {
         return this.resetPosition
     }
 
-    toJSON() {
+    toJSON(resetPosition?: { x: number; z: number }) {
         const boxes: string[] = []
         const marked: string[] = []
+
         for (const box in this.boxes) {
             if (this.boxes[box].height !== 0) {
                 boxes.push(...Array(this.boxes[box].height).fill(box))
@@ -176,9 +183,12 @@ export class World {
                 boxes.push(mark)
             }
         }
+
         return JSON.stringify({
             size: this.size,
-            resetPosition: this.resetPosition,
+            resetPosition: resetPosition
+                ? { x: resetPosition.x, z: resetPosition.z }
+                : this.resetPosition,
             boxes: boxes,
             marked: marked,
         })

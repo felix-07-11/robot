@@ -5,8 +5,22 @@ import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
 import legoFigure from '@/assets/3d/models/characters/lego_minifigure.fbx'
 import { DoubleSide, Mesh, MeshBasicMaterial, MeshPhongMaterial } from 'three'
 
-async function wait(ms: number) {
+async function wait() {
+    const time = localStorage.getItem('wait')
+    let ms = 500
+    if (time == 'pause') {
+        return new Promise((resolve) => {
+            const i = setInterval(() => {
+                if (localStorage.getItem('wait') != 'pause') {
+                    clearInterval(i)
+                    resolve(null)
+                }
+            }, 2)
+        })
+    }
+
     return new Promise((resolve) => {
+        if (!isNaN(Number(time))) ms = Number(time)
         setTimeout(() => resolve(null), ms)
     })
 }
@@ -140,7 +154,7 @@ export class Character {
     }
 
     async step(n: number, d: 'x' | '-x' | 'z' | '-z' = this._direction) {
-        await wait(Number(localStorage.getItem('wait') || 500))
+        await wait()
 
         const old = JSON.parse(JSON.stringify(this._position))
 
@@ -189,7 +203,7 @@ export class Character {
     async turn_right(): Promise<void>
     async turn_right(d: 'x' | '-x' | 'z' | '-z'): Promise<void>
     async turn_right(d?: 'x' | '-x' | 'z' | '-z'): Promise<void> {
-        await wait(Number(localStorage.getItem('wait') || 500))
+        await wait()
 
         if (d === undefined) {
             this.rotation.z = (this.rotation.z - Math.PI / 2) % (Math.PI * 2)
@@ -228,7 +242,7 @@ export class Character {
     async turn_left(): Promise<void>
     async turn_left(d: 'x' | '-x' | 'z' | '-z'): Promise<void>
     async turn_left(d?: 'x' | '-x' | 'z' | '-z'): Promise<void> {
-        await wait(Number(localStorage.getItem('wait') || 500))
+        await wait()
 
         if (d === undefined) {
             this.rotation.z =
@@ -272,7 +286,7 @@ export class Character {
     async put(
         color: 'orange' | 'blue' | 'green' | 'pink' | 'red' | 'purple' = 'blue'
     ): Promise<void> {
-        await wait(Number(localStorage.getItem('wait') || 500))
+        await wait()
 
         const pos: { x: number; y: number; z: number } = JSON.parse(
             JSON.stringify(this._position)
@@ -292,7 +306,7 @@ export class Character {
     }
 
     async pick() {
-        await wait(Number(localStorage.getItem('wait') || 500))
+        await wait()
 
         const pos: { x: number; y: number; z: number } = JSON.parse(
             JSON.stringify(this._position)
@@ -312,7 +326,7 @@ export class Character {
     }
 
     async mark() {
-        await wait(Number(localStorage.getItem('wait') || 500))
+        await wait()
 
         const pos: { x: number; y: number; z: number } = JSON.parse(
             JSON.stringify(this._position)
@@ -322,7 +336,7 @@ export class Character {
     }
 
     async removeMark() {
-        await wait(Number(localStorage.getItem('wait') || 500))
+        await wait()
 
         const pos: { x: number; y: number; z: number } = JSON.parse(
             JSON.stringify(this._position)

@@ -383,7 +383,7 @@ export class Interpreter {
         }
 
         if (n.caseElse) {
-            const el = res.register(await this.run(n.caseElse))
+            const el = res.register(await this.run(n.caseElse, context))
             if (res.error) return res
             return res.success(el)
         }
@@ -438,6 +438,9 @@ export class Interpreter {
     public async run(node: Nodes): Promise<RTResult>
     public async run(node: Nodes, context: Context): Promise<RTResult>
     public async run(node: Nodes, context?: Context): Promise<RTResult> {
+        if (Boolean(localStorage.getItem('stop')))
+            return new RTResult().success()
+
         const func_name = `_run_${node.constructor.name}`
 
         if (!context) {

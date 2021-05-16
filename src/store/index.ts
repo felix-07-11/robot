@@ -90,6 +90,13 @@ export default new Vuex.Store({
         // -----------------------------------------
 
         fallback: '' as string,
+
+        // -----------------------------------------
+        // rw
+        // -----------------------------------------
+
+        world: '{"size":{"width":5,"height":5,"depth":8},"resetPosition":{"x":0,"z":0},"boxes":[],"marked":[]}' as string,
+        newWorld: true as boolean,
     },
     mutations: {
         SET_FILE_TREE(state) {
@@ -106,6 +113,9 @@ export default new Vuex.Store({
             state.fallback = payload
             localStorage.setItem('fallback', state.fallback)
             localStorage.setItem(state.activeRsFilePath, state.fallback)
+        },
+        SET_WORLD(state, payload: string) {
+            state.world = payload
         },
     },
     actions: {
@@ -194,13 +204,15 @@ export default new Vuex.Store({
             const filepath = this.state.fileTree.searchPath(filename).join('/')
             localStorage.setItem(filepath, val || '')
 
-            this.commit('SET_ACTIVE_RS_FILE_PATH', filepath)
+            if (!/\.rw/.test(filepath))
+                this.commit('SET_ACTIVE_RS_FILE_PATH', filepath)
             this.commit('SET_FILE_TREE')
         },
 
         async deleteFile(_, { name }: { name: string }) {
             const path = this.state.fileTree.searchPath(name).join('/')
             this.state.fileTree.deleteFile(name)
+            localStorage.removeItem(path)
 
             if (path === this.state.activeRsFilePath)
                 this.commit('SET_ACTIVE_RS_FILE_PATH', '')

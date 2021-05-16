@@ -85,7 +85,9 @@
                                     ></v-text-field>
                                 </v-col>
                                 <v-col cols="12">
-                                    <v-btn block>Erstellen</v-btn>
+                                    <v-btn block @click="createWorld">
+                                        Erstellen
+                                    </v-btn>
                                 </v-col>
                             </v-row>
                         </v-container>
@@ -126,6 +128,7 @@
 </template>
 
 <script lang="ts">
+import { World } from '@/assets/3d/world'
 import store from '@/store'
 import Vue from 'vue'
 export default Vue.extend({
@@ -138,15 +141,24 @@ export default Vue.extend({
     }),
 
     methods: {
+        createWorld() {
+            store.state.newWorld = true
+            store.commit(
+                'SET_WORLD',
+                World.createNewWorld({
+                    w: Number(this.sizeX),
+                    h: Number(this.sizeY),
+                    d: Number(this.sizeZ),
+                })
+            )
+        },
         saveWorld() {
             let filename = this.filename
             if (!/\.rw/.test(filename)) filename = `${filename}.rw`
             store.dispatch('createFile', {
                 name: filename,
                 dir: 'storage',
-                val:
-                    localStorage.getItem('world') ||
-                    '{"size":{"width":5,"height":5,"depth":8},"resetPosition":{"x":0,"z":0},"boxes":[],"marked":[]}',
+                val: store.state.world,
             })
         },
     },

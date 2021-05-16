@@ -196,7 +196,7 @@
                         flat
                         tile
                     >
-                        <v-card-text>
+                        <v-card-text class="d-flex flex-row align-center">
                             <!-- Script Actions -->
 
                             <!-- Play -->
@@ -216,7 +216,7 @@
                             </v-tooltip>
 
                             <!-- Next -->
-                            <v-tooltip bottom>
+                            <!-- <v-tooltip bottom>
                                 <template v-slot:activator="{ on, attrs }">
                                     <v-btn
                                         icon
@@ -228,7 +228,7 @@
                                     </v-btn>
                                 </template>
                                 <span>Nächster Schritt</span>
-                            </v-tooltip>
+                            </v-tooltip> -->
 
                             <!-- Pause -->
                             <v-tooltip bottom>
@@ -395,6 +395,34 @@
                                 </template>
                                 <span>Markierung löschen (R)</span>
                             </v-tooltip>
+
+                            <v-spacer></v-spacer>
+                            <div
+                                style="width: 30%"
+                                class="d-flex align-center justify-center mr-4"
+                            >
+                                <v-slider
+                                    v-model="speed"
+                                    thumb-label
+                                    :thumb-size="50"
+                                    :min="0"
+                                    :max="1000"
+                                    step="50"
+                                    dense
+                                    :hide-details="true"
+                                    :prepend-icon="
+                                        speed >= 700
+                                            ? 'mdi-speedometer-slow'
+                                            : speed <= 300
+                                            ? 'mdi-speedometer'
+                                            : 'mdi-speedometer-medium'
+                                    "
+                                >
+                                    <template v-slot:thumb-label="{ value }">
+                                        {{ value }} ms
+                                    </template>
+                                </v-slider>
+                            </div>
                         </v-card-text>
                     </v-card>
                 </div>
@@ -536,9 +564,13 @@ export default Vue.extend({
 
         // World
         world: new World(),
+        resetWorld: '',
 
         // Character
         character: null as Character | null,
+
+        // Interpreter
+        interpreter: null as Interpreter | null,
 
         // Log
         log: 'Auf ▶️ drücken um das Programm zu starten...',
@@ -546,12 +578,15 @@ export default Vue.extend({
 
         // robot script
         parsed: null as null | RSError | Nodes,
+
+        speed: 500 as number,
     }),
 
     computed: {
         platform: () => store.state.platform,
         filepath: () => store.state.activeRsFilePath,
         isSaved: () => false,
+        worldString: () => store.state.world,
     },
 
     methods: {
@@ -615,7 +650,11 @@ export default Vue.extend({
             this.controls.enablePan = true
 
             // World
-            await (await this.world.init()).makeWorld()
+            if (store.state.newWorld) {
+                store.state.newWorld = false
+                this.resetWorld = this.worldString
+            }
+            await (await this.world.init()).makeWorld(this.resetWorld)
 
             // Charakter
             this.character = await Character.createLegoCharacter(this.world)
@@ -664,41 +703,55 @@ export default Vue.extend({
         //#region RS Controles
 
         async play() {
+            localStorage.setItem('wait', String(this.speed))
+            localStorage.removeItem('stop')
+            if (this.status === 'pause') {
+                this.status = 'running'
+                return
+            }
             if (this.status === 'running' || !this.character) return
             this.status = 'running'
             if (this.parsed && !(this.parsed instanceof RSError)) {
-                const i = await new Interpreter(this.character, this.world).run(
-                    this.parsed
-                )
+                this.interpreter = new Interpreter(this.character, this.world)
+                const i = await this.interpreter.run(this.parsed)
                 if (i && i.error instanceof RSRuntimeError) {
                     this.status = 'error'
                     this.log = i.error.toString()
-                } else {
+                } else if (!localStorage.getItem('stop')) {
                     this.status = 'done'
                     this.log = 'Das Prgramm wurde erfolgreich beedet.'
                 }
+                this.updateWorld()
             }
         },
 
-        async next() {
-            if (this.status !== 'pause') return
-            this.status = 'running'
-        },
+        // async next() {
+        //     if (this.status !== 'pause') return
+        //     await this.play()
+        //     setTimeout(async () => {
+        //         await this.pause()
+        //     }, 2)
+        // },
 
         async pause() {
             if (this.status !== 'running') return
             this.status = 'pause'
+            localStorage.setItem('wait', 'pause')
         },
 
         async stop() {
             if (
                 this.status === 'error' ||
                 this.status === 'waiting' ||
-                this.status === 'done'
+                this.status === 'done' ||
+                this.interpreter === null
             )
                 return
+
+            localStorage.setItem('stop', 'true')
             this.status = 'done'
             this.log = 'Das Prgramm wurde abgebrochen.'
+            this.updateWorld()
         },
 
         //#endregion
@@ -708,6 +761,7 @@ export default Vue.extend({
         async step() {
             try {
                 await this.character?.step(1)
+                this.updateWorld()
             } catch (e) {
                 this.changeLog(e)
             }
@@ -715,6 +769,7 @@ export default Vue.extend({
         async turnLeft() {
             try {
                 await this.character?.turn_left()
+                this.updateWorld()
             } catch (e) {
                 this.changeLog(e)
             }
@@ -722,6 +777,7 @@ export default Vue.extend({
         async turnRight() {
             try {
                 await this.character?.turn_right()
+                this.updateWorld()
             } catch (e) {
                 this.changeLog(e)
             }
@@ -730,6 +786,7 @@ export default Vue.extend({
         async put() {
             try {
                 await this.character?.put()
+                this.updateWorld()
             } catch (e) {
                 this.changeLog(e)
             }
@@ -737,6 +794,7 @@ export default Vue.extend({
         async pick() {
             try {
                 await this.character?.pick()
+                this.updateWorld()
             } catch (e) {
                 this.changeLog(e)
             }
@@ -745,6 +803,7 @@ export default Vue.extend({
         async mark() {
             try {
                 await this.character?.mark()
+                this.updateWorld()
             } catch (e) {
                 this.changeLog(e)
             }
@@ -752,6 +811,7 @@ export default Vue.extend({
         async removeMark() {
             try {
                 await this.character?.removeMark()
+                this.updateWorld()
             } catch (e) {
                 this.changeLog(e)
             }
@@ -760,6 +820,7 @@ export default Vue.extend({
         async reset() {
             try {
                 await this.character?.reset()
+                this.updateWorld()
             } catch (e) {
                 this.changeLog(e)
             }
@@ -767,15 +828,25 @@ export default Vue.extend({
         async reload() {
             try {
                 this.scene.remove(this.world.Mesh)
-                await this.world.makeWorld()
+                await this.world.makeWorld(this.resetWorld)
                 this.scene.add(this.world.Mesh)
                 await this.character?.reset()
+                this.updateWorld()
             } catch (e) {
                 this.changeLog(e)
             }
         },
 
         //#endregion
+
+        updateWorld() {
+            store.commit(
+                'SET_WORLD',
+                this.world.toJSON(
+                    this.character ? this.character.position : undefined
+                )
+            )
+        },
 
         //#region Log
 
@@ -811,6 +882,16 @@ export default Vue.extend({
             setTimeout(() => {
                 this.editor?.refresh()
             }, 1000)
+        },
+        speed() {
+            if (localStorage.getItem('wait') != 'pause')
+                localStorage.setItem('wait', String(this.speed))
+        },
+        worldString() {
+            if (!store.state.newWorld) return
+            store.state.newWorld = false
+            this.resetWorld = this.worldString
+            this.reload()
         },
     },
 
