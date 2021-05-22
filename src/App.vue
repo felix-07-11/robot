@@ -105,9 +105,10 @@
                             elevation="0"
                             v-bind="attrs"
                             v-on="on"
+                            @click="minify"
                         >
                             <svg
-                                style="width: 20px; height: 20px"
+                                style="width: 16px; height: 16px"
                                 viewBox="0 0 24 24"
                             >
                                 <path fill="currentColor" d="M20,14H4V10H20" />
@@ -127,9 +128,10 @@
                             elevation="0"
                             v-bind="attrs"
                             v-on="on"
+                            @click="window"
                         >
                             <svg
-                                style="width: 20px; height: 20px"
+                                style="width: 16px; height: 16px"
                                 viewBox="0 0 24 24"
                             >
                                 <path
@@ -150,12 +152,13 @@
                             color="red darken-1"
                             fab
                             dark
-                            elevation="0"
+                            elevation="1"
                             v-bind="attrs"
                             v-on="on"
+                            @click="close"
                         >
                             <svg
-                                style="width: 20px; height: 20px"
+                                style="width: 16px; height: 16px"
                                 viewBox="0 0 24 24"
                             >
                                 <path
@@ -227,7 +230,8 @@ export default Vue.extend({
     },
 
     computed: {
-        platform: () => 'other',
+        platform: () => store.state.platform,
+        electron: () => store.state.electron,
     },
 
     data: () => ({
@@ -236,6 +240,29 @@ export default Vue.extend({
 
     created() {
         store.dispatch('init')
+    },
+
+    methods: {
+        minify() {
+            if (this.electron == null) return
+
+            this.electron.getCurrentWindow().minimize()
+        },
+
+        window() {
+            if (this.electron == null) return
+
+            const window = this.electron.getCurrentWindow()
+
+            if (!window.isMaximized()) window.maximize()
+            else window.unmaximize()
+        },
+
+        close() {
+            if (this.electron == null) return
+
+            this.electron.getCurrentWindow().close()
+        },
     },
 })
 </script>
