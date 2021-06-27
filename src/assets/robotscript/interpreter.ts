@@ -1032,7 +1032,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.step(1)
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1046,7 +1046,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.step(1)
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1060,7 +1060,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.turn_left()
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1074,7 +1074,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.turn_left()
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1088,7 +1088,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.turn_right()
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1102,7 +1102,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.turn_right()
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1116,7 +1116,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.put()
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1130,7 +1130,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.put()
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1176,7 +1176,7 @@ class RSBuildInFunction extends RSBaseFunction {
             }
             await executeConetext.character?.put(color)
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1190,7 +1190,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.pick()
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1204,7 +1204,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.pick()
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1218,7 +1218,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.mark()
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1232,7 +1232,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.mark()
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1246,7 +1246,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.removeMark()
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1260,7 +1260,7 @@ class RSBuildInFunction extends RSBaseFunction {
         try {
             await executeConetext.character?.removeMark()
             return new RTResult().success(RSNumber.null)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(e, bif.posStart, bif.posEnd, executeConetext)
             )
@@ -1282,7 +1282,7 @@ class RSBuildInFunction extends RSBaseFunction {
                 return new RTResult().success(RSNumber.true)
             }
             return new RTResult().success(RSNumber.false)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(
                     e,
@@ -1309,7 +1309,7 @@ class RSBuildInFunction extends RSBaseFunction {
                 return new RTResult().success(RSNumber.false)
             }
             return new RTResult().success(RSNumber.true)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(
                     e,
@@ -1336,7 +1336,7 @@ class RSBuildInFunction extends RSBaseFunction {
                 return new RTResult().success(RSNumber.true)
             }
             return new RTResult().success(RSNumber.false)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(
                     e,
@@ -1363,7 +1363,7 @@ class RSBuildInFunction extends RSBaseFunction {
                 return new RTResult().success(RSNumber.false)
             }
             return new RTResult().success(RSNumber.true)
-        } catch (e) {
+        } catch (e: any) {
             return new RTResult().fail(
                 new RSRuntimeError(
                     e,
