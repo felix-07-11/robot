@@ -21,7 +21,7 @@ async function createWindow() {
             nodeIntegration: true,
             enableRemoteModule: true,
         },
-        frame: false
+        frame: false,
     })
 
     if (process.env.WEBPACK_DEV_SERVER_URL) {

@@ -5,8 +5,8 @@
 
 var zähler = 4
 wiederhole (zähler):
-    wiederhole_solange (nichtIstWand):
-        schritt
+    wiederhole_solange (nichtIstWand()):
+        schritt()
     *wiederhole
-    linksdrehen
+    linksdrehen()
 *wiederhole
