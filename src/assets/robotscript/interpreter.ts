@@ -37,9 +37,9 @@ export class RSRuntimeError extends RSError {
 	}
 
 	toString() {
-		return `Zeile ${this.posStart.line + 1} in ${
+		return `Zeile ${this.posStart.line + 1} in "${
 			this._context.displayName
-		}\n${this.error}: ${this.details}`
+		}"\n${this.error}: ${this.details}`
 	}
 }
 
@@ -270,9 +270,11 @@ export class Interpreter {
 		const left = res.register(
 			await this.run((<BinaryOperationNode>node).leftNode, context)
 		) as RSNumber
+		if (res.error) return res
 		const right = res.register(
 			await this.run((<BinaryOperationNode>node).rightNode, context)
 		) as RSNumber
+		if (res.error) return res
 		const op = (<BinaryOperationNode>node).operationToken
 
 		let number: RSNumber | undefined = undefined,
@@ -385,6 +387,8 @@ export class Interpreter {
 			if (res.error) return res
 			return res.success(el)
 		}
+
+		return res.success()
 	}
 
 	private async _run_ForNode(node: Nodes, context: Context) {

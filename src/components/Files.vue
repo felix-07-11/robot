@@ -2,19 +2,24 @@
 	<v-container fill-height fliud>
 		<v-row align="center" justify="space-around">
 			<v-col cols="10" lg="6" xl="6" class="pt-4">
-				<v-alert type="warning">
-					Diese App befindet sich noch in der Entwicklung. (Alpha
-					Version) <br />
+				<v-alert type="info">
+					<div class="text-h6">Alpha-Version</div>
 					<v-divider class="my-3" />
-					Eine Elemente sind nur Designkonzepte und haben keine
-					Funktion.
-					<br />
+					Diese App befindet sich noch in der Entwicklung. <br />
 					<v-divider class="my-3" />
-					Außerdem ist diese Version eine Durchmischung der
-					Desktopversion (Electron) und der Mobileversion / Webversion
-					(PWA). <br />
-					Es kann sein, dass beide Versionen nicht den gleichen
-					Funktionsumfang haben.
+					An folgenden Funktionen wird gearbeitet:
+					<ul>
+						<li>Struktogramme</li>
+						<li>Robotscript Module</li>
+						<li>Robotscript (Weitere Funktionen)</li>
+						<li>Robotscript (Return Statement)</li>
+						<li>Anpassung für Tablets</li>
+						<li>Robotscript (Bugfix)</li>
+						<li>Robotscript (Konvertierung von Robot Karol)</li>
+					</ul>
+					<v-divider class="my-3" />
+					Dies ist die PWA Version der App. Später wird es eine
+					Desktop Version für Windows, Linux und Mac OSX geben.
 					<v-divider class="my-3" />
 					<v-btn
 						block
@@ -31,12 +36,22 @@
 					>
 						Was ist eine PWA App?
 					</v-btn>
+					<v-divider class="my-3" />
+					<v-btn
+						block
+						class="mt-4"
+						href="https://github.com/felix-07-11/robot/issues"
+						target="_blank"
+					>
+						Problem / Bug melden
+					</v-btn>
 				</v-alert>
-				<v-btn block class="mb-4">
+
+				<v-btn v-if="platform === 'desktop'" block class="mb-4">
 					<v-icon left>mdi-folder-plus</v-icon>
 					Arbeitsverzeichnis erstellen
 				</v-btn>
-				<v-btn block class="mb-8">
+				<v-btn v-if="platform === 'desktop'" block class="mb-8">
 					<v-icon left>mdi-folder-open</v-icon>
 					Arbeitsverzeichnis öffnen
 				</v-btn>
@@ -365,6 +380,7 @@ export default Vue.extend({
 	computed: {
 		filetree: () => [store.state.fileTree],
 		canShare: () => false, // (navigator.share === undefined ? false : true),
+		platform: () => store.state.platform,
 	},
 
 	data: () => ({

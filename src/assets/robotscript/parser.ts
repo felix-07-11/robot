@@ -155,7 +155,7 @@ export class Position {
 		return this._col
 	}
 
-	public advance(cc?: string) {
+	public advance(cc?: string | null) {
 		this._index++
 		this._col++
 
@@ -179,7 +179,7 @@ class Lexer {
 	}
 
 	private advance() {
-		this._pos.advance()
+		this._pos.advance(this._currentChar)
 		this._currentChar =
 			this._text.length > this._pos.index
 				? this._text[this._pos.index]

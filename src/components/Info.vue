@@ -10,12 +10,12 @@
 				class="mb-3"
 				>Hilfe zu RobotScript
 			</v-btn>
-			<v-btn
+			<!-- <v-btn
 				href="http://apps.felixwochnick.de/robot"
 				target="_blank"
 				class="mb-3"
 				>Webseite
-			</v-btn>
+			</v-btn> -->
 			<v-btn
 				href="https://github.com/felix-07-11/robot"
 				target="_blank"
