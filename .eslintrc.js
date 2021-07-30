@@ -7,7 +7,7 @@ module.exports = {
         'plugin:vue/essential',
         'eslint:recommended',
         '@vue/typescript/recommended',
-        'prettier'
+        'prettier',
         // '@vue/prettier',
         // '@vue/prettier/@typescript-eslint',
     ],
@@ -20,6 +20,9 @@ module.exports = {
         'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
         'prettier/prettier': [
             'error',
+            {
+                endOfLine: 'auto',
+            },
         ],
     },
 }

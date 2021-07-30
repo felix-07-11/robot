@@ -199,6 +199,7 @@
                 <v-tab-item> <info /> </v-tab-item>
             </v-tabs-items>
         </v-main>
+        <div>
     </v-app>
 </template>
 

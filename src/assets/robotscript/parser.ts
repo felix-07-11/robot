@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
+/* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/no-explicit-any */
 
 //#region RS error
 
@@ -207,8 +207,10 @@ class Lexer {
             } else if (this._currentChar == '*') {
                 tokens.push(this._makeAsterik())
             } else if (this._currentChar == '/') {
-                tokens.push(new Token({ type: 'div', posStart: this._pos }))
-                this.advance()
+                const t = this._makeComments()
+                if (t != undefined) {
+                    tokens.push(t)
+                }
             } else if (this._currentChar == '(') {
                 tokens.push(new Token({ type: 'lparen', posStart: this._pos }))
                 this.advance()
@@ -347,6 +349,32 @@ class Lexer {
         }
 
         return new Token({ type: 'mul', posStart: pos, posEnd: this._pos })
+    }
+
+    private _makeComments() {
+        const pos = this._pos.pos
+        this.advance()
+
+        if (this._currentChar && /[*]/.test(this._currentChar)) {
+            let inComment = true
+            while (inComment || this._currentChar !== null) {
+                this.advance()
+                s s;
+
+                if (this._currentChar != '*') continue
+                this.advance()
+                // @ts-ignore
+                if (this._currentChar == '/') inComment = false
+            }
+            return
+        }
+
+        if (this._currentChar && /[/]/.test(this._currentChar)) {
+            while (this._currentChar != '\n') this.advance()
+            return
+        }
+
+        return new Token({ type: 'div', posStart: pos })
     }
 }
 
@@ -1358,14 +1386,18 @@ class Parser {
             operation.includes(p.ct.type) ||
             operation.some(
                 (item) =>
-                    (item as {
-                        tokenType: tokenType
-                        value: string
-                    }).tokenType == p.ct.type &&
-                    (item as {
-                        tokenType: tokenType
-                        value: string
-                    }).value == p.ct.value
+                    (
+                        item as {
+                            tokenType: tokenType
+                            value: string
+                        }
+                    ).tokenType == p.ct.type &&
+                    (
+                        item as {
+                            tokenType: tokenType
+                            value: string
+                        }
+                    ).value == p.ct.value
             )
         ) {
             const opt = p.ct
