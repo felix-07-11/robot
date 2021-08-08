@@ -3,36 +3,36 @@
 //#region RS error
 
 export class RSError {
-	constructor(
-		public error: string,
-		public details: string,
-		public posStart: Position,
-		public posEnd: Position
-	) {}
+    constructor(
+        public error: string,
+        public details: string,
+        public posStart: Position,
+        public posEnd: Position
+    ) {}
 
-	toString() {
-		return `${this.error}: ${this.details} in Zeile ${
-			this.posStart.line + 1
-		}`
-	}
+    toString() {
+        return `${this.error}: ${this.details} in Zeile ${
+            this.posStart.line + 1
+        }`
+    }
 }
 
 export class RSIllegalCharError extends RSError {
-	constructor(details: string, posStart: Position, posEnd: Position) {
-		super('Falsches Zeichen/Buchstabe', details, posStart, posEnd)
-	}
+    constructor(details: string, posStart: Position, posEnd: Position) {
+        super('Falsches Zeichen/Buchstabe', details, posStart, posEnd)
+    }
 }
 
 export class RSExspectedCharError extends RSError {
-	constructor(details: string, posStart: Position, posEnd: Position) {
-		super('Erwartet', details, posStart, posEnd)
-	}
+    constructor(details: string, posStart: Position, posEnd: Position) {
+        super('Erwartet', details, posStart, posEnd)
+    }
 }
 
 export class RSSyntaxError extends RSError {
-	constructor(details: string, posStart: Position, posEnd: Position) {
-		super('Syntax Fehler', details, posStart, posEnd)
-	}
+    constructor(details: string, posStart: Position, posEnd: Position) {
+        super('Syntax Fehler', details, posStart, posEnd)
+    }
 }
 
 //#endregion
@@ -40,92 +40,92 @@ export class RSSyntaxError extends RSError {
 //#region Token & keywords
 
 export type tokenType =
-	| 'number'
-	| 'identifier'
-	| 'keyword'
-	| 'plus' // +
-	| 'minus' // -
-	| 'mul' // *
-	| 'div' // /
-	| 'eq' // =
-	| 'lparen' // (
-	| 'rparen' // )
-	| 'ee' // ==
-	| 'ne' // !=
-	| 'lt' // <
-	| 'gt' // >
-	| 'lte' // <=
-	| 'gte' // >=
-	| 'co' // :
-	| 'as' // *
-	| 'comma' // ,
-	| 'newline' // \n ;
-	| 'eof' // end
+    | 'number'
+    | 'identifier'
+    | 'keyword'
+    | 'plus' // +
+    | 'minus' // -
+    | 'mul' // *
+    | 'div' // /
+    | 'eq' // =
+    | 'lparen' // (
+    | 'rparen' // )
+    | 'ee' // ==
+    | 'ne' // !=
+    | 'lt' // <
+    | 'gt' // >
+    | 'lte' // <=
+    | 'gte' // >=
+    | 'co' // :
+    | 'as' // *
+    | 'comma' // ,
+    | 'newline' // \n ;
+    | 'eof' // end
 
 export const keywords = [
-	'var',
-	'variable',
-	'und',
-	'oder',
-	'nicht',
-	'wenn',
-	'sonst',
-	'wiederhole',
-	'wiederhole_solange',
-	'funktion',
+    'var',
+    'variable',
+    'und',
+    'oder',
+    'nicht',
+    'wenn',
+    'sonst',
+    'wiederhole',
+    'wiederhole_solange',
+    'funktion',
 ]
 
 export class Token {
-	private _type: tokenType
-	private _value: any = null
-	private _posStart: Position
-	private _posEnd: Position
+    private _type: tokenType
+    private _value: any = null
+    private _posStart: Position
+    private _posEnd: Position
 
-	constructor({
-		type,
-		value = null,
-		posStart,
-		posEnd,
-	}: {
-		type: tokenType
-		value?: any
-		posStart: Position
-		posEnd?: Position
-	}) {
-		this._type = type
-		if (value) this._value = value
+    constructor({
+        type,
+        value = null,
+        posStart,
+        posEnd,
+    }: {
+        type: tokenType
+        value?: any
+        posStart: Position
+        posEnd?: Position
+    }) {
+        this._type = type
+        if (value) this._value = value
 
-		this._posStart = posStart.pos
-		this._posEnd = posStart.pos
-		this._posEnd.advance()
+        this._posStart = posStart.pos
+        this._posEnd = posStart.pos
+        this._posEnd.advance()
 
-		if (posEnd) this._posEnd = posEnd.pos
-	}
+        if (posEnd) this._posEnd = posEnd.pos
+    }
 
-	get type() {
-		return this._type
-	}
+    get type() {
+        return this._type
+    }
 
-	get value() {
-		return this._value
-	}
+    get value() {
+        return this._value
+    }
 
-	get posStart() {
-		return this._posStart
-	}
+    get posStart() {
+        return this._posStart
+    }
 
-	get posEnd() {
-		return this._posEnd
-	}
+    get posEnd() {
+        return this._posEnd
+    }
 
-	toString() {
-		if (this._value) return `${this._type}:${this._value}`
-		return `${this._type}`
-	}
+    toString() {
+        if (this._value) return `${this._type}:${this._value}`
+        return `${this._type}`
+    }
 
-	matches(type: tokenType, value: string) {
-		return this._type === type && this._value === value
-	}
+    matches(type: tokenType, value: string) {
+        return this._type === type && this._value === value
+    }
 }
 
 //#endregion
@@ -133,37 +133,37 @@ export class Token {
 //#region Position
 
 export class Position {
-	constructor(
-		private _index: number,
-		private _line: number,
-		private _col: number
-	) {}
+    constructor(
+        private _index: number,
+        private _line: number,
+        private _col: number
+    ) {}
 
-	get pos() {
-		return new Position(this._index, this._line, this._col)
-	}
+    get pos() {
+        return new Position(this._index, this._line, this._col)
+    }
 
-	get index() {
-		return this._index
-	}
+    get index() {
+        return this._index
+    }
 
-	get line() {
-		return this._line
-	}
+    get line() {
+        return this._line
+    }
 
-	get col() {
-		return this._col
-	}
+    get col() {
+        return this._col
+    }
 
-	public advance(cc?: string | null) {
-		this._index++
-		this._col++
+    public advance(cc?: string | null) {
+        this._index++
+        this._col++
 
-		if (cc == '\n') {
-			this._col = 0
-			this._line += 1
-		}
-	}
+        if (cc == '\n') {
+            this._col = 0
+            this._line += 1
+        }
+    }
 }
 
 //#endregion
@@ -359,7 +359,6 @@ class Lexer {
             let inComment = true
             while (inComment || this._currentChar !== null) {
                 this.advance()
-                s s;
 
                 if (this._currentChar != '*') continue
                 this.advance()
@@ -383,317 +382,317 @@ class Lexer {
 //#region Nodes
 
 export type Nodes =
-	| NumberNode
-	| BinaryOperationNode
-	| UnaryOperationNode
-	| VarAssignNode
-	| VarAccessNode
-	| FunctionDefineNode
-	| FunctionCallNode
-	| IfNode
-	| ForNode
-	| WhileNode
-	| ListNode
+    | NumberNode
+    | BinaryOperationNode
+    | UnaryOperationNode
+    | VarAssignNode
+    | VarAccessNode
+    | FunctionDefineNode
+    | FunctionCallNode
+    | IfNode
+    | ForNode
+    | WhileNode
+    | ListNode
 
 export class NumberNode {
-	constructor(private _token: Token) {}
+    constructor(private _token: Token) {}
 
-	toString() {
-		return this._token.toString()
-	}
+    toString() {
+        return this._token.toString()
+    }
 
-	get token() {
-		return this._token
-	}
+    get token() {
+        return this._token
+    }
 
-	get posStart() {
-		return this._token.posStart
-	}
+    get posStart() {
+        return this._token.posStart
+    }
 
-	get posEnd() {
-		return this._token.posEnd
-	}
+    get posEnd() {
+        return this._token.posEnd
+    }
 }
 
 export class VarAssignNode {
-	constructor(private _varName: Token, private _node: Nodes) {}
+    constructor(private _varName: Token, private _node: Nodes) {}
 
-	toString() {
-		return `( ${this._varName}, ${this._node} )`
-	}
+    toString() {
+        return `( ${this._varName}, ${this._node} )`
+    }
 
-	get varName() {
-		return this._varName
-	}
+    get varName() {
+        return this._varName
+    }
 
-	get node() {
-		return this._node
-	}
+    get node() {
+        return this._node
+    }
 
-	get posStart(): Position {
-		return this._node.posStart
-	}
+    get posStart(): Position {
+        return this._node.posStart
+    }
 
-	get posEnd(): Position {
-		return this._node.posEnd
-	}
+    get posEnd(): Position {
+        return this._node.posEnd
+    }
 }
 
 export class VarAccessNode {
-	constructor(private _varName: Token) {}
+    constructor(private _varName: Token) {}
 
-	toString() {
-		return `( ${this._varName} )`
-	}
+    toString() {
+        return `( ${this._varName} )`
+    }
 
-	get varName() {
-		return this._varName
-	}
+    get varName() {
+        return this._varName
+    }
 
-	get posStart() {
-		return this._varName.posStart
-	}
+    get posStart() {
+        return this._varName.posStart
+    }
 
-	get posEnd() {
-		return this._varName.posEnd
-	}
+    get posEnd() {
+        return this._varName.posEnd
+    }
 }
 
 export class FunctionDefineNode {
-	constructor(
-		private _varName: Token,
-		private _args: Token[],
-		private _body: Nodes
-	) {}
+    constructor(
+        private _varName: Token,
+        private _args: Token[],
+        private _body: Nodes
+    ) {}
 
-	toString() {
-		return `<function def ${this.varName}>`
-	}
+    toString() {
+        return `<function def ${this.varName}>`
+    }
 
-	get varName() {
-		return this._varName
-	}
+    get varName() {
+        return this._varName
+    }
 
-	get args() {
-		return this._args
-	}
+    get args() {
+        return this._args
+    }
 
-	get body() {
-		return this._body
-	}
+    get body() {
+        return this._body
+    }
 
-	get posStart(): Position {
-		return this._varName.posStart
-	}
+    get posStart(): Position {
+        return this._varName.posStart
+    }
 
-	get posEnd(): Position {
-		return this._body.posEnd
-	}
+    get posEnd(): Position {
+        return this._body.posEnd
+    }
 }
 
 export class FunctionCallNode {
-	constructor(private _callName: Nodes, private _args: Nodes[]) {}
+    constructor(private _callName: Nodes, private _args: Nodes[]) {}
 
-	toString() {
-		return `<function ${this._callName}>`
-	}
+    toString() {
+        return `<function ${this._callName}>`
+    }
 
-	get callName() {
-		return this._callName
-	}
+    get callName() {
+        return this._callName
+    }
 
-	get args() {
-		return this._args
-	}
+    get args() {
+        return this._args
+    }
 
-	get posStart(): Position {
-		return this._callName.posStart
-	}
+    get posStart(): Position {
+        return this._callName.posStart
+    }
 
-	get posEnd(): Position {
-		return this._args.length === 0
-			? this._callName.posEnd
-			: this._args[this._args.length - 1].posEnd
-	}
+    get posEnd(): Position {
+        return this._args.length === 0
+            ? this._callName.posEnd
+            : this._args[this._args.length - 1].posEnd
+    }
 }
 
 export class BinaryOperationNode {
-	constructor(
-		private _leftNode: NumberNode,
-		private _operationToken: Token,
-		private _rightNode: NumberNode
-	) {}
+    constructor(
+        private _leftNode: NumberNode,
+        private _operationToken: Token,
+        private _rightNode: NumberNode
+    ) {}
 
-	toString() {
-		return `( ${this._leftNode}, ${this._operationToken}, ${this._rightNode} )`
-	}
+    toString() {
+        return `( ${this._leftNode}, ${this._operationToken}, ${this._rightNode} )`
+    }
 
-	get leftNode() {
-		return this._leftNode
-	}
+    get leftNode() {
+        return this._leftNode
+    }
 
-	get operationToken() {
-		return this._operationToken
-	}
+    get operationToken() {
+        return this._operationToken
+    }
 
-	get rightNode() {
-		return this._rightNode
-	}
+    get rightNode() {
+        return this._rightNode
+    }
 
-	get posStart() {
-		return this._leftNode.posStart
-	}
+    get posStart() {
+        return this._leftNode.posStart
+    }
 
-	get posEnd() {
-		return this._rightNode.posEnd
-	}
+    get posEnd() {
+        return this._rightNode.posEnd
+    }
 }
 
 export class UnaryOperationNode {
-	constructor(private _operationToken: Token, private _node: NumberNode) {}
+    constructor(private _operationToken: Token, private _node: NumberNode) {}
 
-	toString() {
-		return `( ${this._operationToken} ${this._node} )`
-	}
+    toString() {
+        return `( ${this._operationToken} ${this._node} )`
+    }
 
-	get node() {
-		return this._node
-	}
+    get node() {
+        return this._node
+    }
 
-	get operationToken() {
-		return this._operationToken
-	}
+    get operationToken() {
+        return this._operationToken
+    }
 
-	get posStart() {
-		return this._operationToken.posStart
-	}
+    get posStart() {
+        return this._operationToken.posStart
+    }
 
-	get posEnd() {
-		return this._node.posEnd
-	}
+    get posEnd() {
+        return this._node.posEnd
+    }
 }
 
 export class IfNode {
-	constructor(
-		private _caseIf: { condition: Nodes; statements: Nodes },
-		private _caseElse?: Nodes | null
-	) {}
+    constructor(
+        private _caseIf: { condition: Nodes; statements: Nodes },
+        private _caseElse?: Nodes | null
+    ) {}
 
-	get caseIf() {
-		return this._caseIf
-	}
+    get caseIf() {
+        return this._caseIf
+    }
 
-	get caseElse() {
-		return this._caseElse
-	}
+    get caseElse() {
+        return this._caseElse
+    }
 
-	get posStart(): Position {
-		return this._caseIf.condition.posStart
-	}
+    get posStart(): Position {
+        return this._caseIf.condition.posStart
+    }
 
-	get posEnd(): Position {
-		return this._caseElse
-			? this._caseElse.posEnd
-			: this._caseIf.statements.posEnd
-	}
+    get posEnd(): Position {
+        return this._caseElse
+            ? this._caseElse.posEnd
+            : this._caseIf.statements.posEnd
+    }
 }
 
 export class ForNode {
-	private _varName?: Nodes
-	private _start: Nodes
-	private _end: Nodes
-	private _step: Nodes
-	private _body: Nodes
+    private _varName?: Nodes
+    private _start: Nodes
+    private _end: Nodes
+    private _step: Nodes
+    private _body: Nodes
 
-	constructor({
-		varName,
-		start,
-		end,
-		step,
-		body,
-	}: {
-		varName?: Nodes
-		start?: Nodes
-		end: Nodes
-		step?: Nodes
-		body: Nodes
-	}) {
-		this._varName = varName
-		this._start =
-			start ||
-			new NumberNode(
-				new Token({
-					type: 'number',
-					value: new Number('0'),
-					posStart: end.posStart,
-					posEnd: end.posEnd,
-				})
-			)
-		this._end = end
-		this._step =
-			step ||
-			new NumberNode(
-				new Token({
-					type: 'number',
-					value: new Number('1'),
-					posStart: end.posStart,
-					posEnd: end.posEnd,
-				})
-			)
-		this._body = body
-	}
+    constructor({
+        varName,
+        start,
+        end,
+        step,
+        body,
+    }: {
+        varName?: Nodes
+        start?: Nodes
+        end: Nodes
+        step?: Nodes
+        body: Nodes
+    }) {
+        this._varName = varName
+        this._start =
+            start ||
+            new NumberNode(
+                new Token({
+                    type: 'number',
+                    value: new Number('0'),
+                    posStart: end.posStart,
+                    posEnd: end.posEnd,
+                })
+            )
+        this._end = end
+        this._step =
+            step ||
+            new NumberNode(
+                new Token({
+                    type: 'number',
+                    value: new Number('1'),
+                    posStart: end.posStart,
+                    posEnd: end.posEnd,
+                })
+            )
+        this._body = body
+    }
 
-	get start() {
-		return this._start
-	}
+    get start() {
+        return this._start
+    }
 
-	get end() {
-		return this._end
-	}
+    get end() {
+        return this._end
+    }
 
-	get step() {
-		return this._step
-	}
+    get step() {
+        return this._step
+    }
 
-	get body() {
-		return this._body
-	}
+    get body() {
+        return this._body
+    }
 
-	get posStart(): Position {
-		return this._varName ? this._varName.posStart : this._start.posStart
-	}
+    get posStart(): Position {
+        return this._varName ? this._varName.posStart : this._start.posStart
+    }
 
-	get posEnd(): Position {
-		return this._body.posEnd
-	}
+    get posEnd(): Position {
+        return this._body.posEnd
+    }
 }
 
 export class WhileNode {
-	constructor(private _condition: Nodes, private _body: Nodes) {}
+    constructor(private _condition: Nodes, private _body: Nodes) {}
 
-	get condition() {
-		return this._condition
-	}
+    get condition() {
+        return this._condition
+    }
 
-	get body() {
-		return this._body
-	}
+    get body() {
+        return this._body
+    }
 
-	get posStart(): Position {
-		return this._condition.posStart
-	}
+    get posStart(): Position {
+        return this._condition.posStart
+    }
 
-	get posEnd(): Position {
-		return this._body.posEnd
-	}
+    get posEnd(): Position {
+        return this._body.posEnd
+    }
 }
 
 export class ListNode {
-	constructor(
-		public readonly list: Nodes[],
-		public readonly posStart: Position,
-		public readonly posEnd: Position
-	) {}
+    constructor(
+        public readonly list: Nodes[],
+        public readonly posStart: Position,
+        public readonly posEnd: Position
+    ) {}
 }
 
 //#endregion
@@ -701,43 +700,43 @@ export class ListNode {
 //#region Parse result
 
 class ParseResult {
-	public error: RSError | null = null
-	public node: Nodes | null = null
-	public lastRegisteredAdvanceCount = 0
-	public advanceCount = 0
-	public toReverseCount = 0
+    public error: RSError | null = null
+    public node: Nodes | null = null
+    public lastRegisteredAdvanceCount = 0
+    public advanceCount = 0
+    public toReverseCount = 0
 
-	tryRegister(res: ParseResult) {
-		if (res.error) {
-			this.toReverseCount = res.advanceCount
-			return null
-		}
-		return this.register(res)
-	}
+    tryRegister(res: ParseResult) {
+        if (res.error) {
+            this.toReverseCount = res.advanceCount
+            return null
+        }
+        return this.register(res)
+    }
 
-	register(res: ParseResult | any) {
-		this.lastRegisteredAdvanceCount = this.advanceCount
-		this.advanceCount += res.advanceCount
-		if (!(res instanceof ParseResult)) return res
-		if (res.error) this.error = res.error
-		return res.node
-	}
+    register(res: ParseResult | any) {
+        this.lastRegisteredAdvanceCount = this.advanceCount
+        this.advanceCount += res.advanceCount
+        if (!(res instanceof ParseResult)) return res
+        if (res.error) this.error = res.error
+        return res.node
+    }
 
-	registerAdvancement() {
-		this.lastRegisteredAdvanceCount = 1
-		this.advanceCount += 1
-	}
+    registerAdvancement() {
+        this.lastRegisteredAdvanceCount = 1
+        this.advanceCount += 1
+    }
 
-	success(node: Nodes) {
-		this.node = node
-		return this
-	}
+    success(node: Nodes) {
+        this.node = node
+        return this
+    }
 
-	fail(error: RSError) {
-		if (!this.error || this.lastRegisteredAdvanceCount === 0)
-			this.error = error
-		return this
-	}
+    fail(error: RSError) {
+        if (!this.error || this.lastRegisteredAdvanceCount === 0)
+            this.error = error
+        return this
+    }
 }
 
 //#endregion
@@ -1431,15 +1430,15 @@ class Parser {
 // --------------------------------------------------------------------------------------------
 
 export function parse(text: string) {
-	const lexer = new Lexer(text)
-	const { tokens, error } = lexer.generateTokens()
+    const lexer = new Lexer(text)
+    const { tokens, error } = lexer.generateTokens()
 
-	if (error !== null) return error
+    if (error !== null) return error
 
-	const parser = new Parser(tokens)
-	const ast = parser.parse()
+    const parser = new Parser(tokens)
+    const ast = parser.parse()
 
-	if (ast.error) return ast.error
+    if (ast.error) return ast.error
 
-	return ast.node
+    return ast.node
 }

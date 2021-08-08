@@ -1,5 +1,3 @@
-const { truncateSync } = require("original-fs");
-
 module.exports = {
 
 	trailingComma: 'es5',
@@ -7,5 +5,4 @@ module.exports = {
 	semi: false,
 	singleQuote: true,
 	'editor.formatOnSave': true,
-	useTabs: truncateSync,
 }

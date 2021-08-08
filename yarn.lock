@@ -7752,6 +7752,11 @@ ora@^3.4.0:
     strip-ansi "^5.2.0"
     wcwidth "^1.0.1"
 
+original-fs@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/original-fs/-/original-fs-1.1.0.tgz#f856f031b9e24c082ed35b497c9fd4b29f2c031f"
+  integrity sha512-LhW6DNoXdp8oo+Wv6N/QcxNrX/lE8McIySZ1O7llfJut4qA1Sfoy8BjHHWD6lHQMEdoFL+fosGK/DJSkQ5CP2g==
+
 original@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/original/-/original-1.0.2.tgz#e442a61cffe1c5fd20a65f3261c26663b303f25f"
