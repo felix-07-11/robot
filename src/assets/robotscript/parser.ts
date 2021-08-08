@@ -208,9 +208,8 @@ class Lexer {
                 tokens.push(this._makeAsterik())
             } else if (this._currentChar == '/') {
                 const t = this._makeComments()
-                if (t != undefined) {
-                    tokens.push(t)
-                }
+                if (!t) continue
+                tokens.push(t)
             } else if (this._currentChar == '(') {
                 tokens.push(new Token({ type: 'lparen', posStart: this._pos }))
                 this.advance()
@@ -357,14 +356,14 @@ class Lexer {
 
         if (this._currentChar && /[*]/.test(this._currentChar)) {
             let inComment = true
-            while (inComment || this._currentChar !== null) {
+            while (inComment && this._currentChar !== null) {
                 this.advance()
-
                 if (this._currentChar != '*') continue
                 this.advance()
                 // @ts-ignore
                 if (this._currentChar == '/') inComment = false
             }
+            this.advance()
             return
         }
 
