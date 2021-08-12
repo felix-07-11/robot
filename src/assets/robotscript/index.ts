@@ -1,2 +1,2 @@
-export * from './parser'
-export * from './interpreter'
+export * from './parser';
+export * from './interpreter';

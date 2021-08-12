@@ -1,14 +1,23 @@
-import Vue from 'vue'
-import VueRouter, { RouteConfig } from 'vue-router'
+import Vue from 'vue';
+import VueRouter, { RouteConfig } from 'vue-router';
 
-Vue.use(VueRouter)
+// Components
+import ProjectView from '@/views/Project.vue';
 
-const routes: Array<RouteConfig> = []
+Vue.use(VueRouter);
+
+const routes: Array<RouteConfig> = [
+    {
+        name: 'Projekt',
+        path: '',
+        component: ProjectView,
+    },
+];
 
 const router = new VueRouter({
-	mode: 'history',
-	base: process.env.BASE_URL,
-	routes,
-})
+    mode: 'history',
+    base: process.env.BASE_URL,
+    routes,
+});
 
-export default router
+export default router;
