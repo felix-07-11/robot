@@ -312,7 +312,6 @@
                     </template>
                     <span>Schließen</span>
                 </v-tooltip>
-
                 <!-- <template v-slot:extension>
 					<v-tabs v-model="tab" align-with-title>
 						<v-tabs-slider></v-tabs-slider>

@@ -12,4 +12,8 @@ new Vue({
     store,
     vuetify,
     render: (h) => h(App),
+<<<<<<< HEAD
 }).$mount('#app');
+=======
+}).$mount('#app')
+>>>>>>> 0369535d8e24f38cd4bfe72352f41f78f5568264

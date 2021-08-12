@@ -19,6 +19,7 @@
     "core-js": "^3.6.5",
     "file-loader": "^6.2.0",
     "firacode": "^5.2.0",
+    "original-fs": "^1.1.0",
     "raw-loader": "^4.0.2",
     "register-service-worker": "^1.7.1",
     "three": "^0.127.0",

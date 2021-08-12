@@ -747,7 +747,13 @@ export default Vue.extend({
             if (this.parsed && !(this.parsed instanceof RSError)) {
                 this.interpreter = new Interpreter(this.character, this.world);
                 const i = await this.interpreter.run(this.parsed);
-                if (i && i.error instanceof RSRuntimeError) {
+                console.log('test4', i);
+
+                if (
+                    !localStorage.getItem('stop') &&
+                    i &&
+                    i.error instanceof RSRuntimeError
+                ) {
                     this.status = 'error';
                     this.log = i.error.toString();
                 } else if (!localStorage.getItem('stop')) {
@@ -780,7 +786,6 @@ export default Vue.extend({
                 this.interpreter === null
             )
                 return;
-
             localStorage.setItem('stop', 'true');
             this.status = 'done';
             this.log = 'Das Prgramm wurde abgebrochen.';
